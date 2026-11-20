@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Child growth tracker (demo)</title>
+<style>
+:root{--bg:#f7f8f7;--surface:#ffffff;--neutral:#eef1ef;--text-primary:#1b2421;--text-secondary:#5a6661;--border:#d9dfdc;--border-stronger:#8a9690;--accent:#0f6e56;--danger:#a32d2d;--warning:#854f0b;--radius:8px;--surface-2:#ffffff}
+@media (prefers-color-scheme:dark){:root{--bg:#141a18;--surface:#1c2421;--neutral:#242d2a;--text-primary:#e8eeeb;--text-secondary:#a3afa9;--border:#34403b;--border-stronger:#6f7e77;--accent:#5dcaa5;--danger:#f09595;--warning:#efc16a;--surface-2:#1c2421}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;font-weight:500;margin:0 0 4px}
+.sub{font-size:13px;color:var(--text-secondary);margin:0 0 14px}
+.g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.g label{display:block;font-size:13px;color:var(--text-secondary);margin-bottom:2px}
+input,select,button{font:inherit;color:var(--text-primary)}
+input[type=number],input[type=text],input[type=date],select{width:100%;height:38px;padding:0 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{background:transparent;border:1px solid var(--border-stronger);border-radius:var(--radius);cursor:pointer;padding:8px 12px}
+button:hover{background:var(--neutral)}
+.chip{font-size:13px;padding:6px 10px}
+.main-btn{width:100%;margin-top:10px;background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+.main-btn:hover{background:var(--accent);opacity:.92}
+@media (prefers-color-scheme:dark){.main-btn{color:#0b1512}}
+.fl{display:flex;gap:8px;align-items:center;font-size:14px;margin:6px 0}
+.card{background:var(--neutral);border-radius:var(--radius);padding:12px}
+.mt{font-size:13px;color:var(--text-secondary)}
+.mv{font-size:20px;font-weight:500}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;flex:none}
+.banner{font-size:13px;color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin:0 0 12px;background:var(--surface)}
+textarea{width:100%;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font:inherit;color:var(--text-primary);margin-bottom:8px}
+.nt{display:inline-flex;gap:6px;align-items:center;font-size:14px;margin:0 12px 4px 0}
+.sheet{background:#fff;color:#111;border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-top:16px;font-size:14px}
+.sheet .hd{text-align:center;border-bottom:1.5px solid #111;padding-bottom:8px;margin-bottom:8px}
+.sheet .dn{font-size:18px;font-weight:600}
+.sheet table{width:100%;border-collapse:collapse;margin-top:6px}
+.sheet th,.sheet td{border:1px solid #888;padding:5px 6px;text-align:left;vertical-align:top;font-size:13px}
+.sheet .gb{border:1px solid #888;padding:6px 8px;font-size:12.5px;margin:8px 0}
+.sheet .ft{border-top:1px solid #888;margin-top:18px;padding-top:6px;text-align:center;font-size:12px}
+.sug{position:absolute;z-index:20;right:0;min-width:250px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);max-height:260px;overflow:auto;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.sug div{padding:8px 10px;cursor:pointer;font-size:14px}
+.sug div:hover,.sug div.on{background:var(--neutral)}
+.cbox{background:var(--neutral);border-radius:var(--radius);padding:10px;margin-top:8px;font-size:14px}
+.sug.sm{min-width:0;left:0;right:0}
+.sug small{display:block;color:var(--text-secondary);font-size:12px}
+@media print{main>*:not(#rx){display:none!important}.noprint{display:none!important}.sheet{border:0;padding:0;margin:0}body{background:#fff}@page{margin:14mm}}
+.rg{margin-bottom:8px}.cbox label{font-size:13px;color:var(--text-secondary)}.cbox .g label{display:block}
+footer{font-size:12px;color:var(--text-secondary);margin-top:24px}
+</style>
+</head>
+<body>
+<main>
+<h1>Prescription &amp; growth tracker</h1>
+<p class="sub">Prescribe with weight-based dosing. Growth assessment is optional.</p>
+<div class="banner">Demo only: approximate curves, not the official WHO/CDC tables. Not for clinical use.</div>
+<div class="g" style="margin-bottom:10px">
+<div><label for="pname">Patient name</label><input id="pname" type="text" autocomplete="off"></div>
+<div><label for="mrn">Medical record no.</label><input id="mrn" type="text" autocomplete="off"></div>
+<div><label for="pphone">Patient WhatsApp no.</label><input id="pphone" type="tel" autocomplete="off" placeholder="03xx-xxxxxxx or +country code"></div>
+<div><label for="sex">Sex</label><select id="sex"><option value=""></option><option value="m">Boy</option><option value="f">Girl</option></select></div><div><label for="age">Age (years)</label><input id="age" type="number" step="0.1"></div><div><label for="w">Weight (kg)</label><input id="w" type="number" step="0.1"></div>
+</div>
+<details id="growthwrap" style="margin-bottom:10px"><summary style="font-size:17px;font-weight:500;cursor:pointer">Growth assessment (optional)</summary>
+<div class="mt" style="margin:6px 0">Skip this whole section if you only need to prescribe. Sex, age and weight above are used here when you assess growth.</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+<button class="chip" onclick="preset(0)">Short family</button>
+<button class="chip" onclick="preset(1)">Late bloomer</button>
+<button class="chip" onclick="preset(2)">Slow growth</button>
+<button class="chip" onclick="preset(3)">Toddler</button>
+<button class="chip" onclick="preset(4)">No parent heights</button>
+</div>
+<div class="g">
+<div><label for="h">Height / length (cm)</label><input id="h" type="number" step="0.1"></div>
+<div><label for="hc">Head circ. (cm, under 5 y)</label><input id="hc" type="number" step="0.1" placeholder="optional"></div>
+<div><label for="ba">Bone age (months)</label><input id="ba" type="number" placeholder="optional"></div>
+<div><label for="fa">Father (cm)</label><input id="fa" type="number" placeholder="optional"></div>
+<div><label for="mo">Mother (cm)</label><input id="mo" type="number" placeholder="optional"></div>
+<div><label for="ph">Height 12 months ago (cm)</label><input id="ph" type="number" step="0.1" placeholder="optional"></div>
+<div></div>
+</div>
+<div class="fl"><input type="checkbox" id="fd"><label for="fd">Family history of delayed puberty</label></div>
+<div class="fl"><input type="checkbox" id="pd"><label for="pd">Puberty delayed</label></div>
+<button class="main-btn" onclick="run()">Assess growth</button>
+<div id="err" style="font-size:13px;color:var(--danger);margin-top:6px" role="alert"></div>
+<div id="out"></div>
+</details>
+<section style="margin-top:26px">
+<h2 style="font-size:17px;font-weight:500;margin:0 0 8px">Prescription</h2>
+<div class="g" style="margin-bottom:10px"><div><label for="rxw">Weight for dosing (kg)</label><input id="rxw" type="number" step="0.1" placeholder="uses weight above"></div></div>
+<label for="dx" class="mt">Diagnosis / complaints</label>
+<textarea id="dx" rows="2"></textarea>
+<div id="meds"></div>
+<button class="chip" type="button" onclick="addMed()">+ Add medicine</button>
+<label for="adv" class="mt" style="display:block;margin-top:12px">Advice</label>
+<textarea id="adv" rows="2"></textarea>
+<div class="fl"><input type="checkbox" id="incg"><label for="incg">Include growth assessment (only if assessed above)</label></div>
+<button class="main-btn" type="button" onclick="buildRx()">Preview prescription</button>
+</section>
+<div id="rx"></div>
+<details id="libwrap" style="margin-top:26px"><summary style="font-size:17px;font-weight:500;cursor:pointer">Drug Library (editable)</summary><div id="libui" style="margin-top:8px"></div></details>
+<footer>Decision support only. Clinical judgment prevails.</footer>
+</main>
+<script>
+var HB=[50,76,87,96,103,110,116,122,128,133,138,143,149,156,163,169,173,175,176,177,177];
+var HG=[49,74,86,95,102,109,115,121,127,132.5,138,144,151,156,159,161,162,162.5,163,163,163];
+var WB=[3.3,9.6,12.3,14.3,16.3,18.4,20.5,23,25.6,28.5,31.9,35.6,39.9,45.3,51,56.7,61.5,65.2,67.8,69,70];
+var WG=[3.2,8.9,11.8,13.9,16,18,20.2,22.4,25.4,28.5,32.5,37,41.5,46.5,50.5,53,54.5,55.5,56,56.5,57];
+var BB=[16.3,15.5,15.2,15.8,16.6,17.8,19.2,20.6,21.7,22.5];
+var BG=[16.0,15.4,15.2,15.8,16.8,18.2,19.6,20.7,21.4,21.8];
+var CB=[34.5,46,48.3,49.5,50.2,50.8];
+var CG=[33.9,44.9,47.2,48.5,49.3,49.8];
+var ZL=[-1.881,-1.036,0,1.036,1.881],PL=['3','15','50','85','97'];
+var S=null,K='h';
+function ip(T,x,step){var i=Math.min(Math.floor(x/step),T.length-2);var t=x/step-i;return T[i]+(T[i+1]-T[i])*t}
+function pct(z){var t=1/(1+0.3275911*Math.abs(z)/Math.SQRT2);var p=t*(0.254829592+t*(-0.284496736+t*(1.421413741+t*(-1.453152027+t*1.061405429))));var e=1-p*Math.exp(-z*z/2);return (z>=0?0.5*(1+e):0.5*(1-e))*100}
+function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function v(id){var x=document.getElementById(id).value;return x===''?null:parseFloat(x)}
+function preset(n){
+var P=[['m',10,124,21,'',120,160,148,118.5,0,0],['m',14,148,38,'',120,175,162,143.5,1,1],['f',8,112,17,'',90,160,158,108.5,0,0],['f',1.5,78,9.2,46,'',175,162,'',0,0],['m',9,119,20,'','','','',114.5,0,0]][n];
+var ids=['sex','age','h','w','hc','ba','fa','mo','ph'];
+for(var i=0;i<ids.length;i++)document.getElementById(ids[i]).value=P[i];
+document.getElementById('fd').checked=!!P[9];document.getElementById('pd').checked=!!P[10];run()}
+function card(l,val,sub,bad){return '<div class="card"><div class="mt">'+l+'</div><div class="mv"'+(bad?' style="color:var(--danger)"':'')+'>'+val+'</div><div class="mt">'+sub+'</div></div>'}
+function zc(l,z){return card(l,'z '+z.toFixed(2),pct(z).toFixed(1)+' percentile',Math.abs(z)>2)}
+function plot(k){K=k;draw()}
+function draw(){
+var box=document.getElementById('chart'),cmp=document.getElementById('cmp');if(!S||!box)return;
+var M=S.M,k=K,x0=0,x1=20,fn,pv,unit='',nm='';
+if(k=='h'){fn=function(a,z){var m=ip(M?HB:HG,a,1);return m*(1+0.043*z)};pv=S.h;unit='cm';nm='height'}
+else if(k=='w'){fn=function(a,z){var m=ip(M?WB:WG,a,1),s=Math.min(0.2,0.10+0.005*Math.max(a-2,0));return m*Math.exp(s*z)};pv=S.w;unit='kg';nm='weight'}
+else if(k=='b'){x0=2;fn=function(a,z){return ip(M?BB:BG,Math.min(a,19.99)-2,2)*Math.exp(0.11*z)};pv=S.age>=2?S.bmi:null;unit='kg/m2';nm='BMI'}
+else{x1=5;fn=function(a,z){return ip(M?CB:CG,a,1)+1.3*z};pv=S.age<=5?S.hc:null;unit='cm';nm='head circumference'}
+['h','w','b','c'].forEach(function(id){var b=document.getElementById('c_'+id);b.style.fontWeight=id==k?'600':'400';b.style.borderColor=id==k?'var(--accent)':''});
+var msg={h:'',w:'Enter a weight to plot it.',b:'BMI needs a weight and age 2 years or older.',c:'Head circumference needs a value and age up to 5 years.'};
+cmp.innerHTML='';
+if(pv===null||pv===undefined){box.innerHTML='<div class="mt" style="padding:20px 0">'+msg[k]+'</div>';return}
+if(S.age<x0||S.age>x1){box.innerHTML='<div class="mt" style="padding:20px 0">Age is outside this chart range.</div>';return}
+var N=[],a;for(a=x0;a<=x1+1e-9;a+=0.25)N.push(a);
+var lines=ZL.map(function(z){return N.map(function(a){return fn(a,z)})});
+var prev=(k=='h'&&S.ph!==null&&S.age-1>=x0)?S.ph:null;
+var tgt=(k=='h'&&S.mph!==null)?S.mph:null;
+var med=fn(S.age,0),nlo=fn(S.age,-1.881),nhi=fn(S.age,1.881);
+var all=[].concat.apply([],lines).concat([pv]);if(prev!==null)all.push(prev);if(tgt!==null){all.push(tgt-8.5);all.push(tgt+8.5)}
+var y0=Math.floor(Math.min.apply(null,all)),y1=Math.ceil(Math.max.apply(null,all));
+var W=380,H=270,L=38,R=30,T=10,B=30;
+function X(a){return L+(a-x0)/(x1-x0)*(W-L-R)}function Y(y){return T+(1-(y-y0)/(y1-y0))*(H-T-B)}
+function poly(u,l){var p=u.map(function(y,n){return (n?'L':'M')+X(N[n]).toFixed(1)+','+Y(y).toFixed(1)}).join('');for(var n=l.length-1;n>=0;n--)p+='L'+X(N[n]).toFixed(1)+','+Y(l[n]).toFixed(1);return p+'Z'}
+var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Growth chart with normal range"><title>Growth chart with normal range</title>';
+var i,st=(x1-x0)>10?2:1;
+for(i=0;i<=4;i++){var yv=y0+(y1-y0)*i/4;s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(yv)+'" y2="'+Y(yv)+'" stroke="var(--border)" stroke-width="0.5"/><text x="'+(L-5)+'" y="'+(Y(yv)+4)+'" text-anchor="end" font-size="11" fill="var(--text-secondary)">'+(yv%1?yv.toFixed(1):yv.toFixed(0))+'</text>'}
+for(a=x0;a<=x1;a+=st){s+='<text x="'+X(a)+'" y="'+(H-12)+'" text-anchor="middle" font-size="11" fill="var(--text-secondary)">'+a+'</text>'}
+s+='<text x="'+((L+W-R)/2)+'" y="'+(H-1)+'" text-anchor="middle" font-size="11" fill="var(--text-secondary)">Age (years) · '+unit+'</text>';
+s+='<path d="'+poly(lines[4],lines[0])+'" fill="#378ADD" fill-opacity="0.10"/><path d="'+poly(lines[3],lines[1])+'" fill="#378ADD" fill-opacity="0.12"/>';
+lines.forEach(function(ln,j){var d=ln.map(function(y,n){return (n?'L':'M')+X(N[n]).toFixed(1)+','+Y(y).toFixed(1)}).join('');
+s+='<path d="'+d+'" fill="none" stroke="'+(j==2?'#378ADD':'var(--border-stronger)')+'" stroke-width="'+(j==2?2:1)+'"/>';
+s+='<text x="'+(W-R+3)+'" y="'+(Y(ln[ln.length-1])+4)+'" font-size="11" fill="var(--text-secondary)">'+PL[j]+'</text>'});
+if(tgt!==null){var xm=X(x1)-8;s+='<line x1="'+xm+'" x2="'+xm+'" y1="'+Y(tgt-8.5)+'" y2="'+Y(tgt+8.5)+'" stroke="#639922" stroke-width="3"/><circle cx="'+xm+'" cy="'+Y(tgt)+'" r="4" fill="#639922"/><text x="'+(xm-6)+'" y="'+(Y(tgt)+4)+'" text-anchor="end" font-size="11" fill="var(--text-secondary)">Target</text>'}
+s+='<line x1="'+X(S.age)+'" x2="'+X(S.age)+'" y1="'+Y(pv)+'" y2="'+Y(med)+'" stroke="#E24B4A" stroke-width="1" stroke-dasharray="3 3"/>';
+s+='<circle cx="'+X(S.age)+'" cy="'+Y(med)+'" r="5" fill="var(--surface-2)" stroke="#378ADD" stroke-width="2"/>';
+var right=X(S.age)>W*0.6;
+s+='<text x="'+(X(S.age)+(right?-9:9))+'" y="'+(Y(med)+(pv<med?-8:15))+'" text-anchor="'+(right?'end':'start')+'" font-size="11" fill="var(--text-primary)">Normal '+med.toFixed(1)+'</text>';
+if(prev!==null){s+='<line x1="'+X(S.age-1)+'" y1="'+Y(prev)+'" x2="'+X(S.age)+'" y2="'+Y(pv)+'" stroke="#E24B4A" stroke-width="1.5"/><circle cx="'+X(S.age-1)+'" cy="'+Y(prev)+'" r="4" fill="none" stroke="#E24B4A" stroke-width="1.5"/>'}
+s+='<circle cx="'+X(S.age)+'" cy="'+Y(pv)+'" r="5" fill="#E24B4A"/></svg>';
+box.innerHTML=s;
+var zz=S.z[k],d=pv-med;
+cmp.innerHTML='At this age the normal '+nm+' is '+med.toFixed(1)+' '+unit+' (normal range '+nlo.toFixed(1)+' to '+nhi.toFixed(1)+'). This child: <span style="color:var(--text-primary);font-weight:600">'+pv.toFixed(1)+' '+unit+'</span>, '+(d>=0?'+':'')+d.toFixed(1)+' from normal'+(zz!=null?', '+pct(zz).toFixed(1)+' percentile':'')+'.'}
+function run(){
+var err=document.getElementById('err'),out=document.getElementById('out');err.textContent='';
+var sex=document.getElementById('sex').value,age=v('age'),h=v('h'),w=v('w'),hc=v('hc'),fa=v('fa'),mo=v('mo'),ba=v('ba'),ph=v('ph');
+if(sex===''){err.textContent='Select sex for growth assessment.';return}
+if(age===null||age<0||age>20){err.textContent='Enter an age between 0 and 20 years.';return}
+if(h===null||h<40||h>220){err.textContent='Enter a height between 40 and 220 cm.';return}
+if(w!==null&&(w<1||w>200)){err.textContent='Enter a weight between 1 and 200 kg.';return}
+if((fa===null)!==(mo===null)){err.textContent='Enter both parents\u2019 heights, or leave both blank.';return}
+if(fa!==null&&(fa<100||mo<100||fa>230||mo>230)){err.textContent='Parents\u2019 heights should be between 100 and 230 cm.';return}
+var M=sex=='m',cards=[],flags=[],path=0,hasP=fa!==null,mphv=null;
+var mh=ip(M?HB:HG,age,1),z=(h-mh)/(0.043*mh),short=z<-2;
+cards.push(zc('Height z-score',z));
+var zw=null,zb=null,zf=null,zh=null,bmi=null;
+if(w!==null){
+var mw=ip(M?WB:WG,age,1),sw=Math.min(0.2,0.10+0.005*Math.max(age-2,0));
+zw=Math.log(w/mw)/sw;cards.push(zc('Weight z-score',zw));
+bmi=w/Math.pow(h/100,2);
+if(age>=2){var mb=ip(M?BB:BG,Math.min(age,19.99)-2,2);zb=Math.log(bmi/mb)/0.11;cards.push(card('BMI',bmi.toFixed(1),'z '+zb.toFixed(2)+', '+pct(zb).toFixed(1)+' percentile',Math.abs(zb)>2))}
+if(age<5&&h>=45&&h<=120){var mf=15.5*Math.pow(h/100,2);zf=Math.log(w/mf)/0.09;cards.push(zc('Weight-for-height',zf))}
+}
+if(hc!==null&&age<=5){zh=(hc-ip(M?CB:CG,age,1))/1.3;cards.push(zc('Head circumference',zh))}
+var mz=null;
+if(hasP){mphv=(fa+mo+(M?13:-13))/2;mz=(mphv-(M?177:163.5))/7;
+cards.push(card('Mid-parental height',mphv.toFixed(1)+' cm','range '+(mphv-8.5).toFixed(1)+' to '+(mphv+8.5).toFixed(1)))}
+else{var proj=(M?177:163.5)+z*7;
+cards.push(card('Projected adult height',proj.toFixed(0)+' cm','if the child stays on this centile'))}
+var vel=ph!==null?h-ph:null;
+cards.push(card('Height velocity',vel===null?'\u2014':vel.toFixed(1)+' cm/yr',vel===null?'add height 12 months ago':'last 12 months'));
+if(short)flags.push(['r','Height below -2 SD (z = '+z.toFixed(2)+')']);
+if(vel!==null&&age>=4&&vel<4){flags.push(['r','Height velocity '+vel.toFixed(1)+' cm/yr (below 4 after age 4)']);path++}
+if(mz!==null&&z<mz-2){flags.push(['r','Height more than 2 SD below mid-parental height']);path++}
+if(!hasP&&short)flags.push(['i','Parental heights not entered: mid-parental comparison skipped']);
+if(zf!==null){if(zf<-3){flags.push(['r','Severe wasting (weight-for-height below -3 SD)']);path++}else if(zf<-2)flags.push(['a','Wasting (weight-for-height below -2 SD)']);else if(zf>2)flags.push(['a','Overweight (weight-for-height above +2 SD)'])}
+if(short&&zb!==null){if(zb<-2){flags.push(['r','Underweight with short stature (chronic illness, malnutrition, coeliac)']);path++}else if(zb>2)flags.push(['a','Overweight with short stature (consider endocrine causes)'])}
+if(zw!==null&&zw<-2&&!short)flags.push(['a','Underweight for age']);
+if(zh!==null){if(zh<-2)flags.push(['r','Head circumference below -2 SD (microcephaly)']);else if(zh>2)flags.push(['r','Head circumference above +2 SD (macrocephaly)'])}
+if(short&&!M)flags.push(['a','Girl with short stature: consider Turner syndrome (karyotype)']);
+var delay=ba!==null?age*12-ba:null,bd=delay!==null&&delay>=24,bn=delay!==null&&Math.abs(delay)<=12,within=mz!==null&&z>=mz-1.3,pat;
+if(!short&&path===0)pat='Height within normal range for age.';
+else if(path>0)pat=short?'Suspect pathological short stature: evaluate.':'Growth pattern concerning: close follow-up and evaluation.';
+else if(bd&&(document.getElementById('pd').checked||document.getElementById('fd').checked))pat='Pattern consistent with constitutional delay of growth and puberty (diagnosis of exclusion).';
+else if(within&&(bn||delay===null)&&vel!==null)pat='Pattern consistent with familial short stature.';
+else pat='Indeterminate: obtain bone age and re-measure velocity over 6 months.';
+var col={r:'var(--danger)',a:'var(--warning)',i:'var(--text-secondary)'};
+var fh=flags.map(function(f){return '<div style="font-size:14px;margin:4px 0;display:flex;align-items:flex-start"><span class="dot" style="background:'+col[f[0]]+';margin-top:6px"></span><span>'+f[1]+'</span></div>'}).join('');
+var wk=(path>0||pat.indexOf('Indeterminate')>-1)?'<div class="mt" style="margin-top:8px">Suggested workup: CBC, ESR/CRP, renal and liver function, TSH/fT4, tTG-IgA with total IgA, IGF-1, bone age'+(M?'':', karyotype')+'</div>':'';
+S={M:M,age:age,h:h,w:w,hc:hc,bmi:bmi,ph:ph,mph:mphv,z:{h:z,w:zw,b:zb,c:zh},zf:zf,pat:pat,vel:vel,proj:(hasP?null:proj)};
+var pn=document.getElementById('pname').value.trim(),rn=document.getElementById('mrn').value.trim();
+var ay=Math.floor(age),am=Math.floor((age-ay)*12);
+out.innerHTML='<div class="card" style="margin-top:14px"><div style="font-size:16px;font-weight:500">'+(esc(pn)||'Unnamed patient')+'</div><div class="mt">MRN: '+(esc(rn)||'not entered')+' · '+(M?'Boy':'Girl')+', '+ay+' y '+am+' m</div></div><div class="g" style="margin-top:10px">'+cards.join('')+'</div><div class="card" style="margin-top:10px"><div class="mt" style="margin-bottom:4px">Findings</div>'+(fh||'<div style="font-size:14px">No red flags</div>')+'<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;font-size:15px;font-weight:600">'+pat+'</div>'+wk+'<div class="mt" style="margin-top:8px">Decision support only; clinical judgment prevails.</div></div>'+
+'<div style="margin-top:16px"><div style="font-size:16px;font-weight:500;margin-bottom:6px">Growth chart</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><button class="chip" id="c_h" onclick="plot(\'h\')">Height</button><button class="chip" id="c_w" onclick="plot(\'w\')">Weight</button><button class="chip" id="c_b" onclick="plot(\'b\')">BMI</button><button class="chip" id="c_c" onclick="plot(\'c\')">Head circ.</button></div><div id="chart"></div><div id="cmp" class="mt" style="margin-top:6px"></div><div class="mt" style="margin-top:6px">Shaded: normal range (3rd to 97th centile), darker 15th to 85th. Blue line and hollow dot: normal median. Red: this child. Green bar: parents\u2019 target range.</div></div>';
+draw()}
+var TIM=['دن میں ایک بار','دن میں دو بار (صبح، شام)','دن میں تین بار (صبح، دوپہر، شام)','دن میں چار بار','رات کو سوتے وقت','ضرورت کے وقت'];
+var NOTE=['کھانے کے بعد','کھانے سے پہلے','استعمال سے پہلے ہلائیں','کورس مکمل کریں'];
+function addMed(){
+var d=document.createElement('div');d.className='med card';d.style.marginBottom='8px';
+d.innerHTML='<div class="g"><div><label>Form</label><select class="mpre"><option value=""></option>'+PRE.map(function(x){return '<option>'+x+'</option>'}).join('')+'</select></div><div style="position:relative"><label>Medicine</label><input type="text" class="mn" autocomplete="off" placeholder="Start typing"><div class="sug" style="display:none"></div></div><div style="position:relative"><label>Dose</label><input type="text" class="md" autocomplete="off"><div class="sug sm" style="display:none"></div></div><div style="position:relative"><label>Duration</label><input type="text" class="mu" autocomplete="off"><div class="sug sm" style="display:none"></div></div><div><label>Timing</label><select class="mtim"><option value=""></option>'+TIM.map(function(t){return '<option>'+t+'</option>'}).join('')+'</select></div></div><div class="calc" style="display:none"></div><div class="notes" style="margin:8px 0">'+NOTE.map(function(n){return '<label class="nt"><input type="checkbox" value="'+n+'"> '+n+'</label>'}).join('')+'</div><button class="chip" type="button" onclick="this.closest(\'.med\').remove()">Remove</button>';
+document.getElementById('meds').appendChild(d);attachSuggest(d.querySelector('.mn'));attachList(d.querySelector('.md'),DOSE);attachList(d.querySelector('.mu'),DUR);wireCalc(d)}
+function buildRx(){
+var useG=document.getElementById('incg').checked;if(useG){run();if(document.getElementById('err').textContent||!S)return}
+var pn=document.getElementById('pname').value.trim(),rn=document.getElementById('mrn').value.trim();
+var meds=[].slice.call(document.querySelectorAll('.med')).map(function(e){return{p:e.querySelector('.mpre').value,n:e.querySelector('.mn').value.trim(),d:e.querySelector('.md').value.trim(),u:e.querySelector('.mu').value.trim(),t:e.querySelector('.mtim').value,o:[].slice.call(e.querySelectorAll('.notes input:checked')).map(function(c){return c.value})}}).filter(function(m){return m.n});
+var dx=document.getElementById('dx').value.trim(),adv=document.getElementById('adv').value.trim();
+var ag=v('age'),ay=ag===null?null:Math.floor(ag),am=ag===null?null:Math.floor((ag-ay)*12),sx=document.getElementById('sex').value,sxt=sx=='m'?'Male':sx=='f'?'Female':'';
+function zp(z){return z==null?'':' (z '+z.toFixed(1)+', '+pct(z).toFixed(1)+' %ile)'}
+var gl=[];
+if(useG&&S){
+var parts=['Ht '+S.h+' cm'+zp(S.z.h)];
+if(S.w!==null)parts.push('Wt '+S.w+' kg'+zp(S.z.w));
+if(S.bmi!==null&&S.z.b!=null)parts.push('BMI '+S.bmi.toFixed(1)+zp(S.z.b));
+if(S.zf!=null)parts.push('WfH'+zp(S.zf));
+if(S.hc!==null&&S.z.c!=null)parts.push('HC '+S.hc+' cm'+zp(S.z.c));
+gl.push(parts.join('; '));
+gl.push(S.mph!==null?'Mid-parental height '+S.mph.toFixed(1)+' cm (range '+(S.mph-8.5).toFixed(1)+' to '+(S.mph+8.5).toFixed(1)+')':'Projected adult height '+S.proj.toFixed(0)+' cm (current centile)');
+if(S.vel!==null)gl.push('Height velocity '+S.vel.toFixed(1)+' cm/yr');
+gl.push('Assessment: '+S.pat+' (decision support only)')}
+window._rx={pn:pn,rn:rn,meds:meds,dx:dx,adv:adv,gl:gl,ay:ay,am:am,sxt:sxt};
+var rows=meds.map(function(m,i){return '<tr><td>'+(i+1)+'</td><td><b>'+esc((m.p?m.p+' ':'')+m.n)+'</b></td><td dir="auto">'+esc(m.d)+'</td><td dir="auto">'+esc(m.u)+'</td><td dir="rtl" lang="ur">'+[m.t].concat(m.o.length?[m.o.join('، ')]:[]).filter(Boolean).join('<br>')+'</td></tr>'}).join('');
+var h='<div class="sheet" id="rxsheet"><div class="hd"><div class="dn">Dr. M. Ibrahim Ishaq</div><div>MBBS, RMP, Dip. Paeds. RCP (Ireland)</div><div>G.M Family Clinic, Faisalabad</div><div>Contact: 0306-7602000</div></div>'+
+'<div><b>Name:</b> '+(esc(pn)||'\u2014')+' &nbsp; <b>MRN:</b> '+(esc(rn)||'\u2014')+(ay!==null?' &nbsp; <b>Age:</b> '+ay+' y '+am+' m':'')+(sxt?' &nbsp; <b>Sex:</b> '+sxt:'')+(WT()?' &nbsp; <b>Weight:</b> '+WT()+' kg':'')+' &nbsp; <b>Date:</b> '+new Date().toLocaleDateString('en-GB')+'</div>'+
+(dx?'<div style="margin-top:6px"><b>Diagnosis / complaints:</b> '+esc(dx)+'</div>':'')+
+(gl.length?'<div class="gb"><b>Growth</b><br>'+gl.map(esc).join('<br>')+'</div>':'')+
+'<div style="font-size:18px;font-weight:600;margin-top:10px">Rx</div>'+
+(rows?'<table><thead><tr><th style="width:24px">#</th><th>Medicine</th><th>Dose</th><th>Duration</th><th dir="rtl" lang="ur">وقت / ہدایات</th></tr></thead><tbody>'+rows+'</tbody></table>':'<div>\u2014</div>')+
+(adv?'<div style="margin-top:10px"><b>Advice:</b> '+esc(adv)+'</div>':'')+
+'<div class="ft"><div dir="rtl" lang="ur">زبانی رضامندی (Verbal Consent) لے لی گئی ہے۔ ڈاکٹر کسی بھی دوائی کے ضمنی اثرات کے ذمہ دار نہیں ہیں۔</div><div>This prescription is not valid for court of law. | G.M Family Clinic \u2014 PHC Reg. No. R-54080</div></div></div>'+
+'<button class="main-btn noprint" type="button" onclick="window.print()">Print / Save as PDF</button><button class="main-btn noprint" type="button" onclick="openWA()">Share on WhatsApp</button><div id="wa" class="noprint"></div><div class="mt noprint" style="margin-top:6px">In the print window, choose a printer or choose Save as PDF.</div>';
+var box=document.getElementById('rx');box.innerHTML=h;box.scrollIntoView({behavior:'smooth'})}
+var MED=[{"b":"Azomax","g":"Azithromycin","s":"200 mg/5 mL","c":"Antibiotics"},{"b":"Zithromax","g":"Azithromycin","s":"200 mg/5 mL","c":"Antibiotics"},{"b":"Cefiget","g":"Cefixime","s":"100 mg/5 mL","c":"Antibiotics"},{"b":"Cefspan","g":"Cefixime","s":"100 mg/5 mL","c":"Antibiotics"},{"b":"Suprax","g":"Cefixime","s":"100 mg/5 mL","c":"Antibiotics"},{"b":"Klavox","g":"Amoxicillin + Clavulanate","s":"156.25 mg/5 mL","c":"Antibiotics"},{"b":"Augmentin","g":"Amoxicillin + Clavulanate","s":"228.5 mg/5 mL","c":"Antibiotics"},{"b":"Amoxil","g":"Amoxicillin","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Amoxil Forte","g":"Amoxicillin","s":"250 mg/5 mL","c":"Antibiotics"},{"b":"Moxatag","g":"Amoxicillin","s":"Formulation varies","c":"Antibiotics"},{"b":"Cefaclor","g":"Cefaclor","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Ceclor","g":"Cefaclor","s":"250 mg/5 mL","c":"Antibiotics"},{"b":"Keflex","g":"Cephalexin","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Velosef","g":"Cephradine","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Cefradine","g":"Cephradine","s":"250 mg/5 mL","c":"Antibiotics"},{"b":"Cefurox","g":"Cefuroxime axetil","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Zinnat","g":"Cefuroxime axetil","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Cefpodox","g":"Cefpodoxime","s":"50 mg/5 mL","c":"Antibiotics"},{"b":"Orelox","g":"Cefpodoxime","s":"50 mg/5 mL","c":"Antibiotics"},{"b":"Bactrim","g":"Co-trimoxazole","s":"40/200 mg per 5 mL","c":"Antibiotics"},{"b":"Septran","g":"Co-trimoxazole","s":"40/200 mg per 5 mL","c":"Antibiotics"},{"b":"Flagyl","g":"Metronidazole","s":"200 mg/5 mL","c":"Antibiotics"},{"b":"Klion","g":"Metronidazole","s":"Formulation varies","c":"Antibiotics"},{"b":"Erythrocin","g":"Erythromycin","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Clarith","g":"Clarithromycin","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Klacid","g":"Clarithromycin","s":"125 mg/5 mL","c":"Antibiotics"},{"b":"Clindamycin","g":"Clindamycin","s":"Oral solution varies","c":"Antibiotics"},{"b":"Nitrofurantoin","g":"Nitrofurantoin","s":"25 mg/5 mL","c":"Antibiotics"},{"b":"Fosfomycin","g":"Fosfomycin","s":"Sachet","c":"Antibiotics"},{"b":"Doxycycline","g":"Doxycycline","s":"Dispersible tablet","c":"Antibiotics"},{"b":"Calpol","g":"Paracetamol","s":"120 mg/5 mL","c":"Fever and pain"},{"b":"Panadol","g":"Paracetamol","s":"120 mg/5 mL","c":"Fever and pain"},{"b":"Tyno","g":"Paracetamol","s":"250 mg/5 mL","c":"Fever and pain"},{"b":"Brufen","g":"Ibuprofen","s":"100 mg/5 mL","c":"Fever and pain"},{"b":"Nurofen","g":"Ibuprofen","s":"100 mg/5 mL","c":"Fever and pain"},{"b":"Ibufen","g":"Ibuprofen","s":"100 mg/5 mL","c":"Fever and pain"},{"b":"Ponstan","g":"Mefenamic acid","s":"50 mg/5 mL","c":"Fever and pain"},{"b":"Dicloran","g":"Diclofenac","s":"Formulation varies","c":"Fever and pain"},{"b":"Cataflam","g":"Diclofenac","s":"Oral drops/suspension varies","c":"Fever and pain"},{"b":"Naproxen","g":"Naproxen","s":"Suspension varies","c":"Fever and pain"},{"b":"Rigix","g":"Cetirizine","s":"5 mg/5 mL","c":"Antiallergic"},{"b":"Zyrtec","g":"Cetirizine","s":"5 mg/5 mL","c":"Antiallergic"},{"b":"Telfast","g":"Fexofenadine","s":"30 mg/5 mL","c":"Antiallergic"},{"b":"Clarityne","g":"Loratadine","s":"5 mg/5 mL","c":"Antiallergic"},{"b":"Aerius","g":"Desloratadine","s":"2.5 mg/5 mL","c":"Antiallergic"},{"b":"Desora","g":"Desloratadine","s":"2.5 mg/5 mL","c":"Antiallergic"},{"b":"Phenergan","g":"Promethazine","s":"5 mg/5 mL","c":"Antiallergic"},{"b":"Piriton","g":"Chlorpheniramine","s":"2 mg/5 mL","c":"Antiallergic"},{"b":"Atarax","g":"Hydroxyzine","s":"10 mg/5 mL","c":"Antiallergic"},{"b":"Levocet","g":"Levocetirizine","s":"2.5 mg/5 mL","c":"Antiallergic"},{"b":"Ventolin","g":"Salbutamol","s":"2 mg/5 mL","c":"Asthma and respiratory"},{"b":"Ascoril","g":"Combination","s":"Varies","c":"Asthma and respiratory"},{"b":"Mucosolvan","g":"Ambroxol","s":"15 mg/5 mL","c":"Asthma and respiratory"},{"b":"Ambroxol","g":"Ambroxol","s":"15 mg/5 mL","c":"Asthma and respiratory"},{"b":"Bisolvon","g":"Bromhexine","s":"4 mg/5 mL","c":"Asthma and respiratory"},{"b":"Ivy Leaf Syrup","g":"Hedera helix","s":"Varies","c":"Asthma and respiratory"},{"b":"Montika","g":"Montelukast","s":"4 mg granules/tablet","c":"Asthma and respiratory"},{"b":"Singulair","g":"Montelukast","s":"4 mg granules/tablet","c":"Asthma and respiratory"},{"b":"Pulmicort","g":"Budesonide","s":"0.5 mg/2 mL nebules","c":"Asthma and respiratory"},{"b":"Flixotide","g":"Fluticasone","s":"Inhaler","c":"Asthma and respiratory"},{"b":"Seretide","g":"Fluticasone + Salmeterol","s":"Inhaler","c":"Asthma and respiratory"},{"b":"Symbicort","g":"Budesonide + Formoterol","s":"Inhaler","c":"Asthma and respiratory"},{"b":"Atrovent","g":"Ipratropium","s":"Nebulizer solution","c":"Asthma and respiratory"},{"b":"Duolin","g":"Salbutamol + Ipratropium","s":"Nebulizer solution","c":"Asthma and respiratory"},{"b":"Levolin","g":"Levosalbutamol","s":"Nebulizer solution","c":"Asthma and respiratory"},{"b":"Theo-Asthalin","g":"Theophylline","s":"Syrup/tablet","c":"Asthma and respiratory"},{"b":"Cetirizine","g":"Cetirizine","s":"5 mg/5 mL","c":"Asthma and respiratory"},{"b":"Guaifenesin","g":"Guaifenesin","s":"Varies","c":"Asthma and respiratory"},{"b":"Acetylcysteine","g":"Acetylcysteine","s":"100 mg sachet","c":"Asthma and respiratory"},{"b":"Dornase alfa","g":"Dornase alfa","s":"Nebulizer solution","c":"Asthma and respiratory"},{"b":"Motilium","g":"Domperidone","s":"5 mg/5 mL","c":"Gastrointestinal"},{"b":"Domel","g":"Domperidone","s":"5 mg/5 mL","c":"Gastrointestinal"},{"b":"Gravinate","g":"Dimenhydrinate","s":"12.5 mg/5 mL","c":"Gastrointestinal"},{"b":"Zofran","g":"Ondansetron","s":"4 mg/5 mL","c":"Gastrointestinal"},{"b":"Emeset","g":"Ondansetron","s":"4 mg/5 mL","c":"Gastrointestinal"},{"b":"Duphalac","g":"Lactulose","s":"3.35 g/5 mL","c":"Gastrointestinal"},{"b":"Lactulose","g":"Lactulose","s":"3.35 g/5 mL","c":"Gastrointestinal"},{"b":"Movicol","g":"Macrogol","s":"Sachet","c":"Gastrointestinal"},{"b":"Gaviscon","g":"Alginate combination","s":"Formulation varies","c":"Gastrointestinal"},{"b":"Omeprazole","g":"Omeprazole","s":"2 mg/mL compounded suspension","c":"Gastrointestinal"},{"b":"Losec","g":"Omeprazole","s":"Capsules/granules","c":"Gastrointestinal"},{"b":"Nexium","g":"Esomeprazole","s":"10 mg sachet","c":"Gastrointestinal"},{"b":"Famotidine","g":"Famotidine","s":"Suspension varies","c":"Gastrointestinal"},{"b":"Cremaffin","g":"Liquid paraffin + Milk of Magnesia","s":"Varies","c":"Gastrointestinal"},{"b":"Simethicone","g":"Simethicone","s":"Drops","c":"Gastrointestinal"},{"b":"Infacol","g":"Simethicone","s":"40 mg/0.6 mL","c":"Gastrointestinal"},{"b":"Lactase drops","g":"Lactase enzyme","s":"Drops","c":"Gastrointestinal"},{"b":"ORS","g":"Oral rehydration salts","s":"Sachet","c":"Gastrointestinal"},{"b":"Zincat","g":"Zinc sulfate","s":"Varies","c":"Gastrointestinal"},{"b":"Hiflora","g":"Probiotic","s":"Varies","c":"Probiotics, vitamins and supplements"},{"b":"Lactocare","g":"Probiotic","s":"Varies","c":"Probiotics, vitamins and supplements"},{"b":"Enterogermina","g":"Bacillus clausii","s":"2 billion/5 mL","c":"Probiotics, vitamins and supplements"},{"b":"Econorm","g":"Saccharomyces boulardii","s":"250 mg","c":"Probiotics, vitamins and supplements"},{"b":"Zinplex","g":"Zinc sulfate","s":"Varies","c":"Probiotics, vitamins and supplements"},{"b":"Maltofer","g":"Iron polymaltose","s":"50 mg/5 mL","c":"Probiotics, vitamins and supplements"},{"b":"Feroglobin","g":"Iron + vitamins","s":"Varies","c":"Probiotics, vitamins and supplements"},{"b":"Sangobion","g":"Iron + vitamins","s":"Formulation varies","c":"Probiotics, vitamins and supplements"},{"b":"Iberet","g":"Iron + vitamins","s":"Formulation varies","c":"Probiotics, vitamins and supplements"},{"b":"Polyvitamin","g":"Multivitamins","s":"Varies","c":"Probiotics, vitamins and supplements"},{"b":"Polybion","g":"B-complex","s":"Varies","c":"Probiotics, vitamins and supplements"},{"b":"Surbex-Z","g":"Vitamins + zinc","s":"Tablet","c":"Probiotics, vitamins and supplements"},{"b":"D-Sol","g":"Cholecalciferol","s":"Drops","c":"Probiotics, vitamins and supplements"},{"b":"Sunny-D","g":"Cholecalciferol","s":"Drops","c":"Probiotics, vitamins and supplements"},{"b":"Calcee","g":"Calcium","s":"Syrup/tablet","c":"Probiotics, vitamins and supplements"},{"b":"Calcium Sandoz","g":"Calcium","s":"Formulation varies","c":"Probiotics, vitamins and supplements"},{"b":"Evion","g":"Vitamin E","s":"Capsules","c":"Probiotics, vitamins and supplements"},{"b":"Vitamin A","g":"Retinol","s":"Drops/capsule","c":"Probiotics, vitamins and supplements"},{"b":"Vitamin B12","g":"Cyanocobalamin","s":"Injection/oral","c":"Probiotics, vitamins and supplements"},{"b":"Canesten","g":"Clotrimazole","s":"1% cream","c":"Antifungal and dermatological"},{"b":"Daktarin","g":"Miconazole","s":"2% oral gel/cream","c":"Antifungal and dermatological"},{"b":"Nystatin","g":"Nystatin","s":"Oral suspension","c":"Antifungal and dermatological"},{"b":"Mycostatin","g":"Nystatin","s":"100,000 units/mL","c":"Antifungal and dermatological"},{"b":"Lamisil","g":"Terbinafine","s":"1% cream","c":"Antifungal and dermatological"},{"b":"Nizoral","g":"Ketoconazole","s":"2% cream/shampoo","c":"Antifungal and dermatological"},{"b":"Hydrozole","g":"Hydrocortisone combination","s":"Cream","c":"Antifungal and dermatological"},{"b":"Fucidin","g":"Fusidic acid","s":"2% cream","c":"Antifungal and dermatological"},{"b":"Bactroban","g":"Mupirocin","s":"2% ointment","c":"Antifungal and dermatological"},{"b":"Elocon","g":"Mometasone","s":"0.1% cream","c":"Antifungal and dermatological"},{"b":"Hydrocortisone","g":"Hydrocortisone","s":"1% cream","c":"Antifungal and dermatological"},{"b":"Betnovate","g":"Betamethasone","s":"0.1% cream","c":"Antifungal and dermatological"},{"b":"Calamine","g":"Calamine","s":"Lotion","c":"Antifungal and dermatological"},{"b":"Permethrin","g":"Permethrin","s":"5% cream","c":"Antifungal and dermatological"},{"b":"Lindane","g":"Lindane","s":"Lotion","c":"Antifungal and dermatological"},{"b":"Zentel","g":"Albendazole","s":"200 mg/5 mL","c":"Anthelmintics and antiparasitic"},{"b":"Vermox","g":"Mebendazole","s":"100 mg/5 mL","c":"Anthelmintics and antiparasitic"},{"b":"Mebendazole","g":"Mebendazole","s":"100 mg/5 mL","c":"Anthelmintics and antiparasitic"},{"b":"Combantrin","g":"Pyrantel pamoate","s":"Suspension varies","c":"Anthelmintics and antiparasitic"},{"b":"Ivermectin","g":"Ivermectin","s":"Tablet","c":"Anthelmintics and antiparasitic"},{"b":"Nix","g":"Permethrin","s":"1% lotion","c":"Anthelmintics and antiparasitic"},{"b":"Lyclear","g":"Permethrin","s":"5% cream","c":"Anthelmintics and antiparasitic"},{"b":"Soolantra","g":"Ivermectin","s":"1% cream","c":"Anthelmintics and antiparasitic"},{"b":"Praziquantel","g":"Praziquantel","s":"Tablet","c":"Anthelmintics and antiparasitic"},{"b":"Tinidazole","g":"Tinidazole","s":"Suspension/tablet varies","c":"Anthelmintics and antiparasitic"},{"b":"Epival","g":"Sodium valproate","s":"Syrup 200 mg/5 mL","c":"Neurology and emergency"},{"b":"Depakine","g":"Sodium valproate","s":"Syrup 200 mg/5 mL","c":"Neurology and emergency"},{"b":"Tegretol","g":"Carbamazepine","s":"100 mg/5 mL","c":"Neurology and emergency"},{"b":"Trileptal","g":"Oxcarbazepine","s":"300 mg/5 mL","c":"Neurology and emergency"},{"b":"Keppra","g":"Levetiracetam","s":"100 mg/mL","c":"Neurology and emergency"},{"b":"Topamax","g":"Topiramate","s":"Sprinkle capsules","c":"Neurology and emergency"},{"b":"Phenobarbital","g":"Phenobarbital","s":"Tablet/elixir","c":"Neurology and emergency"},{"b":"Clonazepam","g":"Clonazepam","s":"Drops/tablet","c":"Neurology and emergency"},{"b":"Diazepam","g":"Diazepam","s":"Rectal solution/injection","c":"Neurology and emergency"},{"b":"Buccolam","g":"Midazolam","s":"Oromucosal solution","c":"Neurology and emergency"},{"b":"Phenytoin","g":"Phenytoin","s":"Suspension","c":"Neurology and emergency"},{"b":"Baclofen","g":"Baclofen","s":"5 mg/5 mL compounded","c":"Neurology and emergency"},{"b":"Pyridoxine","g":"Vitamin B6","s":"Tablet/injection","c":"Neurology and emergency"},{"b":"Levodopa + Carbidopa","g":"Levodopa + Carbidopa","s":"Tablet","c":"Neurology and emergency"},{"b":"Melatonin","g":"Melatonin","s":"Liquid/tablet","c":"Neurology and emergency"},{"b":"Eltroxin","g":"Levothyroxine","s":"25 mcg tablet","c":"Endocrine, metabolic and other"},{"b":"Thyroxine","g":"Levothyroxine","s":"Tablet","c":"Endocrine, metabolic and other"},{"b":"Hydrocort","g":"Hydrocortisone","s":"Tablet/injection","c":"Endocrine, metabolic and other"},{"b":"Predsol","g":"Prednisolone","s":"5 mg/5 mL","c":"Endocrine, metabolic and other"},{"b":"Wysolone","g":"Prednisolone","s":"Tablet","c":"Endocrine, metabolic and other"},{"b":"Decadron","g":"Dexamethasone","s":"Injection/tablet","c":"Endocrine, metabolic and other"},{"b":"Florinef","g":"Fludrocortisone","s":"0.1 mg tablet","c":"Endocrine, metabolic and other"},{"b":"DDAVP","g":"Desmopressin","s":"Nasal/oral formulation","c":"Endocrine, metabolic and other"},{"b":"Genotropin","g":"Somatropin","s":"Injection","c":"Endocrine, metabolic and other"},{"b":"Insulin","g":"Human insulin","s":"Injection","c":"Endocrine, metabolic and other"},{"b":"NovoRapid","g":"Insulin aspart","s":"Injection","c":"Endocrine, metabolic and other"},{"b":"Lantus","g":"Insulin glargine","s":"Injection","c":"Endocrine, metabolic and other"},{"b":"Glucophage","g":"Metformin","s":"Tablet","c":"Endocrine, metabolic and other"},{"b":"Hydralazine","g":"Hydralazine","s":"Tablet/injection","c":"Endocrine, metabolic and other"},{"b":"Propranolol","g":"Propranolol","s":"5 mg/5 mL compounded","c":"Endocrine, metabolic and other"},{"b":"Captopril","g":"Captopril","s":"Tablet","c":"Endocrine, metabolic and other"},{"b":"Enalapril","g":"Enalapril","s":"Tablet","c":"Endocrine, metabolic and other"},{"b":"Furosemide","g":"Furosemide","s":"10 mg/mL solution","c":"Endocrine, metabolic and other"},{"b":"Spironolactone","g":"Spironolactone","s":"Tablet/suspension","c":"Endocrine, metabolic and other"},{"b":"Digoxin","g":"Digoxin","s":"50 mcg/mL","c":"Endocrine, metabolic and other"},{"b":"Cyproheptadine","g":"Cyproheptadine","s":"2 mg/5 mL","c":"Additional"},{"b":"Periactin","g":"Cyproheptadine","s":"2 mg/5 mL","c":"Additional"},{"b":"Folvite","g":"Folic acid","s":"5 mg tablet","c":"Additional"},{"b":"Fefol","g":"Iron + folic acid","s":"Capsule","c":"Additional"},{"b":"Ursocol","g":"Ursodeoxycholic acid","s":"250 mg tablet","c":"Additional"},{"b":"Urso","g":"Ursodeoxycholic acid","s":"Suspension varies","c":"Additional"},{"b":"Cholestyramine","g":"Cholestyramine","s":"Sachet","c":"Additional"},{"b":"Tranexamic acid","g":"Tranexamic acid","s":"Tablet/injection","c":"Additional"},{"b":"Vitamin K","g":"Phytomenadione","s":"Injection","c":"Additional"},{"b":"Adrenaline","g":"Epinephrine","s":"1 mg/mL injection","c":"Additional"},{"b":"Atropine","g":"Atropine","s":"Injection","c":"Additional"},{"b":"Adenosine","g":"Adenosine","s":"Injection","c":"Additional"},{"b":"Calcium gluconate","g":"Calcium gluconate","s":"Injection","c":"Additional"},{"b":"Magnesium sulfate","g":"Magnesium sulfate","s":"Injection","c":"Additional"},{"b":"Sodium bicarbonate","g":"Sodium bicarbonate","s":"Injection","c":"Additional"},{"b":"Dextrose","g":"Glucose","s":"IV solution","c":"Additional"},{"b":"Ceftriaxone","g":"Ceftriaxone","s":"Injection","c":"Additional"},{"b":"Cefotaxime","g":"Cefotaxime","s":"Injection","c":"Additional"},{"b":"Amikacin","g":"Amikacin","s":"Injection","c":"Additional"},{"b":"Gentamicin","g":"Gentamicin","s":"Injection","c":"Additional"},{"b":"Meropenem","g":"Meropenem","s":"Injection","c":"Additional"},{"b":"Piperacillin + Tazobactam","g":"Combination","s":"Injection","c":"Additional"},{"b":"Vancomycin","g":"Vancomycin","s":"Injection","c":"Additional"},{"b":"Acyclovir","g":"Acyclovir","s":"Suspension/injection","c":"Additional"},{"b":"Oseltamivir","g":"Oseltamivir","s":"6 mg/mL suspension","c":"Additional"},{"b":"Fluconazole","g":"Fluconazole","s":"50 mg/5 mL","c":"Additional"},{"b":"Ketoconazole","g":"Ketoconazole","s":"Tablet/cream","c":"Additional"},{"b":"Artesunate","g":"Artesunate","s":"Injection","c":"Additional"},{"b":"Chloroquine","g":"Chloroquine","s":"Tablet/syrup varies","c":"Additional"},{"b":"Hydroxychloroquine","g":"Hydroxychloroquine","s":"Tablet","c":"Additional"}];
+var PRE=['Syp.','Tab.','Sachet','Cap.','Drops','Inj.','Cream','Oint.'];
+var DOSE=['2.5 ml','3.5 ml','5 ml','10 ml'];
+var DUR=['3 دن','5 دن','7 دن','14 دن','15 دن','30 دن'];
+function attachList(inp,list){
+var box=inp.parentNode.querySelector('.sug');
+function hide(){box.style.display='none'}
+function show(){var q=inp.value.trim().toLowerCase();var r=list.filter(function(x){return !q||x.toLowerCase().indexOf(q)>-1});if(!r.length){hide();return}
+box.innerHTML=r.map(function(x){return '<div>'+esc(x)+'</div>'}).join('');box.style.display='block'}
+inp.addEventListener('focus',show);inp.addEventListener('input',show);
+inp.addEventListener('blur',function(){setTimeout(hide,200)});
+box.addEventListener('mousedown',function(e){e.preventDefault()});
+box.addEventListener('click',function(e){var t=e.target.closest('div');if(t){inp.value=t.textContent;hide()}})}
+function guessForm(s){s=(s||'').toLowerCase();var f={};
+if(s.indexOf('sachet')>-1)f['Sachet']=1;if(s.indexOf('tablet')>-1)f['Tab.']=1;if(s.indexOf('capsule')>-1)f['Cap.']=1;if(s.indexOf('drops')>-1)f['Drops']=1;if(s.indexOf('injection')>-1)f['Inj.']=1;if(s.indexOf('cream')>-1)f['Cream']=1;if(s.indexOf('ointment')>-1)f['Oint.']=1;
+if(/syrup|suspension|elixir|oral solution|mg\/5 ml|per 5 ml/.test(s))f['Syp.']=1;
+['gel','shampoo','lotion','rectal'].forEach(function(x){if(s.indexOf(x)>-1)f[x]=1});
+var k=Object.keys(f);return k.length==1&&PRE.indexOf(k[0])>-1?k[0]:''}
+function fillName(m){var base=m.b.toLowerCase()===m.g.toLowerCase()?m.b:m.b+' ('+m.g+')';var s=(m.s||'').replace(/^syrup\s+/i,'').trim();return(/\d/.test(s)&&!/varies/i.test(s))?base+' '+s:base}
+function attachSuggest(inp){
+var box=inp.parentNode.querySelector('.sug'),cur=-1;
+function hide(){box.style.display='none';cur=-1}
+function pick(i){inp.value=fillName(MED[i]);var sel=inp.closest('.med').querySelector('.mpre');if(sel&&!sel.value)sel.value=guessForm(MED[i].s);hide();renderCalc(inp.closest('.med'))}
+function show(){
+var q=inp.value.trim().toLowerCase();if(!q){hide();return}
+var r=MED.map(function(m,i){var b=m.b.toLowerCase(),g=m.g.toLowerCase(),p=b.indexOf(q)==0?0:g.indexOf(q)==0?1:(b.indexOf(q)>-1||g.indexOf(q)>-1)?2:3;return{i:i,p:p}}).filter(function(x){return x.p<3}).sort(function(a,b){return a.p-b.p||a.i-b.i}).slice(0,8);
+if(!r.length){hide();return}
+box.innerHTML=r.map(function(x){var m=MED[x.i];return '<div data-i="'+x.i+'">'+esc(m.b)+'<small>'+esc(m.g)+' \u00b7 '+esc(m.s)+'</small></div>'}).join('');
+box.style.display='block';cur=-1}
+inp.addEventListener('input',show);
+inp.addEventListener('focus',show);
+inp.addEventListener('blur',function(){setTimeout(hide,200)});
+inp.addEventListener('keydown',function(e){
+var it=box.querySelectorAll('div[data-i]');if(box.style.display=='none'||!it.length)return;
+if(e.key=='ArrowDown'||e.key=='ArrowUp'){e.preventDefault();cur=(cur+(e.key=='ArrowDown'?1:-1)+it.length)%it.length;[].forEach.call(it,function(x,k){x.className=k==cur?'on':''})}
+else if(e.key=='Enter'&&cur>-1){e.preventDefault();pick(it[cur].getAttribute('data-i'))}
+else if(e.key=='Escape')hide()});
+box.addEventListener('mousedown',function(e){e.preventDefault()});
+box.addEventListener('click',function(e){var t=e.target.closest('div[data-i]');if(t){pick(t.getAttribute('data-i'))}})}
+var RULES=[{"id":"paracetamol","generics":["paracetamol"],"adultWeightKg":44,"minAgeMonths":3,"minAgeNote":"Dosing under 12 weeks differs; review carefully.","source":"Standard paediatric acetaminophen dosing: 10-15 mg/kg/dose every 4-6 h (e.g. SickKids AboutKidsHealth).","regimens":[{"label":"15 mg/kg every 6 h as needed (reference range 10-15 mg/kg every 4-6 h)","dosesPerDay":4,"prn":true,"intervalText":"every 6 hours as needed","note":"Limit 4 doses/24 h here (some references allow 5). Maximum 75 mg/kg/day and 4 g/day. Short-term use; review if symptoms persist.","phases":[{"label":"","mgPerKg":15,"refMin":10,"refMax":15,"days":0,"maxDoseMg":1000}],"maxDailyMg":4000,"maxDailyMgPerKg":75}]},{"id":"ibuprofen","generics":["ibuprofen"],"adultWeightKg":44,"minAgeMonths":6,"minAgeNote":"Ibuprofen is generally labelled from 6 months; some guidelines allow from 3 months and >5 kg.","source":"5-10 mg/kg every 6-8 h, maximum 40 mg/kg/day (and 2.4 g/day) (e.g. AHFS/Drugs.com monograph; SickKids).","regimens":[{"label":"5 mg/kg every 8 h (fever below 39.2 C)","dosesPerDay":3,"prn":true,"intervalText":"every 6-8 hours as needed","note":"Give with food/fluids; keep the child hydrated. Short-term use.","phases":[{"label":"","mgPerKg":5,"refMin":5,"refMax":10,"days":0,"maxDoseMg":400}],"maxDailyMg":2400,"maxDailyMgPerKg":40},{"label":"10 mg/kg every 8 h (higher fever or pain)","dosesPerDay":3,"prn":true,"intervalText":"every 6-8 hours as needed","note":"Give with food/fluids; keep the child hydrated. Short-term use.","phases":[{"label":"","mgPerKg":10,"refMin":5,"refMax":10,"days":0,"maxDoseMg":400}],"maxDailyMg":2400,"maxDailyMgPerKg":40}]},{"id":"azithromycin","generics":["azithromycin"],"minAgeMonths":6,"minAgeNote":"Labelled from 6 months of age.","source":"FDA Zithromax prescribing information, paediatric dosing (2.2).","regimens":[{"label":"Otitis media / sinusitis: 10 mg/kg once daily for 3 days","dosesPerDay":1,"prn":false,"intervalText":"once daily","note":"","phases":[{"label":"","mgPerKg":10,"refMin":10,"refMax":10,"days":3,"maxDoseMg":500}],"days":3},{"label":"Community-acquired pneumonia: 10 mg/kg on day 1, then 5 mg/kg on days 2-5","dosesPerDay":1,"prn":false,"intervalText":"once daily","note":"","phases":[{"label":"Day 1","mgPerKg":10,"refMin":10,"refMax":10,"days":1,"maxDoseMg":500},{"label":"Days 2-5","mgPerKg":5,"refMin":5,"refMax":5,"days":4,"maxDoseMg":250}]},{"label":"Pharyngitis / tonsillitis (2 years and older): 12 mg/kg once daily for 5 days","dosesPerDay":1,"prn":false,"intervalText":"once daily","note":"","phases":[{"label":"","mgPerKg":12,"refMin":12,"refMax":12,"days":5,"maxDoseMg":500}],"days":5,"minAgeMonths":24}]},{"id":"cefixime","generics":["cefixime"],"adultWeightKg":45,"minAgeMonths":6,"minAgeNote":"Safety and efficacy not established under 6 months.","source":"FDA Suprax prescribing information: 8 mg/kg/day as a single dose or divided every 12 h; adult dose above 45 kg.","regimens":[{"label":"8 mg/kg/day divided every 12 h (4 mg/kg per dose)","dosesPerDay":2,"prn":false,"intervalText":"every 12 hours","note":"Duration depends on the infection; Strep. pyogenes infections need at least 10 days (label).","phases":[{"label":"","mgPerKg":4,"refMin":4,"refMax":4,"days":0,"maxDoseMg":200}],"days":7,"maxDailyMg":400},{"label":"8 mg/kg once daily","dosesPerDay":1,"prn":false,"intervalText":"once daily","note":"Duration depends on the infection; Strep. pyogenes infections need at least 10 days (label).","phases":[{"label":"","mgPerKg":8,"refMin":8,"refMax":8,"days":0,"maxDoseMg":400}],"days":7,"maxDailyMg":400}]},{"id":"amoxicillin","generics":["amoxicillin"],"adultWeightKg":40,"minAgeMonths":3,"minAgeNote":"Under 3 months the upper dose is 30 mg/kg/day divided every 12 h; review separately.","source":"FDA amoxicillin prescribing information (3 months and older, under 40 kg); high-dose regimen per paediatric guidance (e.g. AAP).","regimens":[{"label":"Mild-moderate: 25 mg/kg/day divided every 12 h","dosesPerDay":2,"prn":false,"intervalText":"every 12 hours","note":"Typical courses 5-14 days depending on infection.","phases":[{"label":"","mgPerKg":12.5,"refMin":12.5,"refMax":12.5,"days":0,"maxDoseMg":500}],"days":7,"maxDailyMg":1000},{"label":"Mild-moderate: 20 mg/kg/day divided every 8 h","dosesPerDay":3,"prn":false,"intervalText":"every 8 hours","note":"Typical courses 5-14 days depending on infection.","phases":[{"label":"","mgPerKg":6.6667,"refMin":6.6667,"refMax":6.6667,"days":0,"maxDoseMg":250}],"days":7,"maxDailyMg":750},{"label":"Severe / lower respiratory: 45 mg/kg/day divided every 12 h","dosesPerDay":2,"prn":false,"intervalText":"every 12 hours","note":"Typical courses 5-14 days depending on infection.","phases":[{"label":"","mgPerKg":22.5,"refMin":22.5,"refMax":22.5,"days":0,"maxDoseMg":875}],"days":7,"maxDailyMg":1750},{"label":"Severe / lower respiratory: 40 mg/kg/day divided every 8 h","dosesPerDay":3,"prn":false,"intervalText":"every 8 hours","note":"Typical courses 5-14 days depending on infection.","phases":[{"label":"","mgPerKg":13.3333,"refMin":13.3333,"refMax":13.3333,"days":0,"maxDoseMg":500}],"days":7,"maxDailyMg":1500},{"label":"High dose (e.g. otitis media): 90 mg/kg/day divided every 12 h","dosesPerDay":2,"prn":false,"intervalText":"every 12 hours","note":"80-90 mg/kg/day high-dose regimens are guideline-based; confirm the indication.","phases":[{"label":"","mgPerKg":45,"refMin":45,"refMax":45,"days":0}],"days":10,"maxDailyMg":4000}]},{"id":"amoxicillin-clavulanate","generics":["amoxicillin + clavulanate"],"adultWeightKg":40,"minAgeMonths":3,"minAgeNote":"Under 12 weeks the dose is modified (30 mg/kg/day amoxicillin divided every 12 h); review separately.","doseComponent":"amoxicillin","concOverrides":{"156.25 mg/5 mL":125,"228.5 mg/5 mL":200},"source":"FDA Augmentin prescribing information: dosed on the amoxicillin component; 25-45 mg/kg/day every 12 h or 20-40 mg/kg/day every 8 h.","regimens":[{"label":"Mild-moderate: 25 mg/kg/day every 12 h (200 or 400 mg/5 mL products)","dosesPerDay":2,"prn":false,"intervalText":"every 12 hours","note":"Dose is on the amoxicillin component. Typical courses 5-14 days.","phases":[{"label":"","mgPerKg":12.5,"refMin":12.5,"refMax":12.5,"days":0}],"days":7,"forConc":[200,400]},{"label":"Mild-moderate: 20 mg/kg/day every 8 h (125 or 250 mg/5 mL products)","dosesPerDay":3,"prn":false,"intervalText":"every 8 hours","note":"Dose is on the amoxicillin component. Typical courses 5-14 days.","phases":[{"label":"","mgPerKg":6.6667,"refMin":6.6667,"refMax":6.6667,"days":0}],"days":7,"forConc":[125,250]},{"label":"Severe / respiratory: 45 mg/kg/day every 12 h (200 or 400 mg/5 mL products)","dosesPerDay":2,"prn":false,"intervalText":"every 12 hours","note":"Dose is on the amoxicillin component. Typical courses 5-14 days.","phases":[{"label":"","mgPerKg":22.5,"refMin":22.5,"refMax":22.5,"days":0}],"days":7,"forConc":[200,400]},{"label":"Severe / respiratory: 40 mg/kg/day every 8 h (125 or 250 mg/5 mL products)","dosesPerDay":3,"prn":false,"intervalText":"every 8 hours","note":"Dose is on the amoxicillin component. Typical courses 5-14 days.","phases":[{"label":"","mgPerKg":13.3333,"refMin":13.3333,"refMax":13.3333,"days":0}],"days":7,"forConc":[125,250]}]},{"id":"co-trimoxazole","generics":["co-trimoxazole"],"minAgeMonths":2,"minAgeNote":"Contraindicated under 2 months of age.","doseComponent":"trimethoprim","concOverrides":{"40/200 mg per 5 mL":40},"source":"Trimethoprim 8 mg/kg/day in 2 divided doses (max 160 mg per dose), as used in the SCOUT paediatric UTI trial. Check your local guideline.","regimens":[{"label":"Trimethoprim 8 mg/kg/day divided every 12 h (4 mg/kg per dose)","dosesPerDay":2,"prn":false,"intervalText":"every 12 hours","note":"Dose is on the trimethoprim component (40 mg per 5 mL in a 40/200 suspension). UTI courses of 5-10 days are used; confirm the indication.","phases":[{"label":"","mgPerKg":4,"refMin":4,"refMax":4,"days":0,"maxDoseMg":160}],"days":7}]}];
+function rulefor(g){g=(g||'').toLowerCase();for(var i=0;i<RULES.length;i++)if(RULES[i].generics.indexOf(g)>-1)return RULES[i];return null}
+function concFor(m,rule){var o=rule.concOverrides&&rule.concOverrides[m.s];if(o)return o;var x=/^\s*(\d+(?:\.\d+)?)\s*mg\s*\/\s*(\d+(?:\.\d+)?)\s*mL\s*$/i.exec(m.s||'');return x?parseFloat(x[1])*5/parseFloat(x[2]):null}
+function findMedOld(text){var t=(text||'').trim().toLowerCase();if(t.length<2)return null;var best=null;
+MED.forEach(function(m){var b=m.b.toLowerCase();if(t.indexOf(b)==0&&(!best||b.length>best.b.length))best=m});if(best)return best;
+MED.forEach(function(m){var g=m.g.toLowerCase();if(t.indexOf(g)==0&&(!best||g.length>best.g.length))best=m});return best}
+function fnum(v,d){d=d==null?2:d;var s=Number(v).toFixed(d);if(s.indexOf('.')>-1)s=s.replace(/0+$/,'').replace(/\.$/,'');return s}
+function calcPhases(reg,w,mgkg,dpd,conc,step){
+return reg.phases.map(function(p,i){
+var mg=mgkg[i]*w,capped=false;
+if(p.maxDoseMg!=null&&mg>p.maxDoseMg){mg=p.maxDoseMg;capped=true}
+var caps=[];if(reg.maxDailyMg!=null)caps.push(reg.maxDailyMg);if(reg.maxDailyMgPerKg!=null)caps.push(reg.maxDailyMgPerKg*w);
+caps.forEach(function(c){if(mg*dpd>c){mg=c/dpd;capped=true}});
+var r={label:p.label,mgkg:mgkg[i],mg:mg,capped:capped,ml:null,rml:null,rmg:null,dev:null};
+if(conc>0){var pm=conc/5;r.ml=mg/pm;var s=step>0?step:(r.ml<2.5?0.25:0.5);r.rml=Math.max(s,Math.round(r.ml/s)*s);r.rmg=r.rml*pm;r.dev=(r.rmg-mg)/mg*100}
+return r})}
+function warnsFor0(rule,reg,w,ageM,mgkg,res){var o=[];
+if(w<2||w>120)o.push('Check the weight ('+fnum(w)+' kg).');
+var mina=reg.minAgeMonths!=null?reg.minAgeMonths:rule.minAgeMonths;
+if(mina!=null&&ageM<mina)o.push(reg.minAgeMonths!=null?'This regimen is labelled for children aged '+mina+' months and older.':'Child is younger than the reference minimum age ('+mina+' months). '+(rule.minAgeNote||''));
+if(rule.adultWeightKg!=null&&w>=rule.adultWeightKg)o.push('Weight is '+fnum(rule.adultWeightKg)+' kg or more: adult dosing may apply.');
+for(var i=0;i<reg.phases.length;i++){var p=reg.phases[i];if(mgkg[i]<p.refMin*0.995||mgkg[i]>p.refMax*1.005){o.push('mg/kg is outside the reference range ('+fnum(p.refMin,3)+'-'+fnum(p.refMax,3)+' mg/kg per dose).');break}}
+if(res.some(function(r){return r.capped}))o.push('Dose was capped at the maximum single or daily dose.');
+for(var j=0;j<res.length;j++){if(res[j].dev!=null&&Math.abs(res[j].dev)>10){o.push('Rounded volume differs from the calculated dose by '+fnum(Math.abs(res[j].dev),0)+'%.');break}}
+return o}
+function WT(){var a=parseFloat(document.getElementById('rxw').value);if(a>0)return a;var b=parseFloat(document.getElementById('w').value);return b>0?b:null}
+function AGEM(){var a=parseFloat(document.getElementById('age').value);return a>=0?a*12:999}
+function localISO(){var t=new Date();return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0')}
+function fmtD(s){if(!s)return '';var p=s.split('-');return p[2]+'-'+p[1]+'-'+p[0]}
+function wireCalc(row){
+var nm=row.querySelector('.mn'),t=null;
+function upd(){clearTimeout(t);t=setTimeout(function(){renderCalc(row)},350)}
+nm.addEventListener('input',upd);nm.addEventListener('blur',upd);
+['rxw','w','age'].forEach(function(id){document.getElementById(id).addEventListener('input',function(){if(row._rule)calcUpdate(row)})})}
+function renderCalc(row){
+var box=row.querySelector('.calc'),med=findMed(row.querySelector('.mn').value),rule=med?rulefor(med.g):null;
+if(!rule){row._rule=null;row._key=null;if(med){box.style.display='block';box.innerHTML='<div class="cbox"><div style="color:var(--warning)">\u26a0 No dose rule for '+esc(med.g)+' in the Drug Library, so no dose was calculated. Enter the dose yourself or add the drug in Drug Library below.</div></div>'}else{box.style.display='none';box.innerHTML=''}return}
+var key=med.b+'|'+med.g+'|'+med.s;
+if(row._key!==key){row._key=key;buildCalc(row,med,rule)}
+box.style.display='block';calcUpdate(row)}
+function buildCalc(row,med,rule){
+var box=row.querySelector('.calc');row._rule=rule;row._med=med;
+var conc=concFor(med,rule),def=0;
+for(var i=0;i<rule.regimens.length;i++){var f=rule.regimens[i].forConc;if(!f||(conc&&f.indexOf(conc)>-1)){def=i;break}}
+box.innerHTML='<div class="cbox"><b>Dose calculator: '+esc(med.b)+' ('+esc(med.s)+')</b><div class="mt" style="margin:2px 0 8px">Suggested dose for your review only. Check current references and the child\u2019s clinical situation, edit as needed, then approve.</div>'+
+'<label class="mt" style="display:block">Regimen</label><select class="creg" style="margin-bottom:8px">'+rule.regimens.map(function(r,i){return '<option value="'+i+'"'+(i==def?' selected':'')+'>'+esc(r.label)+'</option>'}).join('')+'</select>'+
+'<div class="g"><div class="cph"></div><div><label>Doses/day</label><input type="number" class="cdpd"></div><div><label>Days</label><input type="number" class="cdays"></div><div><label>mg per 5 mL</label><input type="number" step="any" class="cconc" value="'+(conc?fnum(conc):'')+'"></div><div><label>Round to (mL)</label><input type="number" step="any" class="cstep" placeholder="auto"></div></div>'+
+'<div class="cres" style="margin-top:8px"></div><div class="cwarn"></div><button class="chip capp" type="button" style="margin-top:8px">Approve and add to prescription</button></div>';
+function load(){var reg=rule.regimens[+box.querySelector('.creg').value];
+box.querySelector('.cph').outerHTML='<div class="cph" style="display:contents">'+reg.phases.map(function(p,i){return '<div><label>'+(p.label?esc(p.label)+' mg/kg':'mg/kg per dose')+'</label><input type="number" step="any" class="cmk" value="'+fnum(p.mgPerKg,3)+'"></div>'}).join('')+'</div>';
+box.querySelector('.cdpd').value=reg.dosesPerDay;
+var td=reg.days!=null?reg.days:reg.phases.reduce(function(a,p){return a+(p.days||0)},0);box.querySelector('.cdays').value=td>0?td:'';
+[].forEach.call(box.querySelectorAll('.cmk'),function(i){i.addEventListener('input',function(){calcUpdate(row)})})}
+load();
+box.querySelector('.creg').addEventListener('change',function(){load();calcUpdate(row)});
+['.cdpd','.cdays','.cconc','.cstep'].forEach(function(s){box.querySelector(s).addEventListener('input',function(){calcUpdate(row)})});
+box.querySelector('.capp').addEventListener('click',function(){applyCalc(row)})}
+function calcUpdate(row){
+var rule=row._rule;if(!rule)return;var box=row.querySelector('.calc');
+var reg=rule.regimens[+box.querySelector('.creg').value],w=WT(),out=box.querySelector('.cres'),wr=box.querySelector('.cwarn');
+if(!w){out.innerHTML='<div class="mt">Enter the child\u2019s weight (above or in the prescription section) to calculate.</div>';wr.innerHTML='';row._res=null;return}
+var mgkg=[].map.call(box.querySelectorAll('.cmk'),function(i){return parseFloat(i.value)});
+if(mgkg.some(function(x){return !(x>0)})){out.innerHTML='<div class="mt">Enter mg/kg.</div>';wr.innerHTML='';row._res=null;return}
+var dpd=parseInt(box.querySelector('.cdpd').value)||reg.dosesPerDay,conc=parseFloat(box.querySelector('.cconc').value)||null,step=parseFloat(box.querySelector('.cstep').value)||0;
+var res=calcPhases(reg,w,mgkg,dpd,conc,step);row._res={reg:reg,res:res,dpd:dpd};
+var days=parseInt(box.querySelector('.cdays').value);
+out.innerHTML=res.map(function(r){return '<div>'+(r.label?esc(r.label)+': ':'')+fnum(r.mg,1)+' mg per dose ('+fnum(r.mgkg,2)+' mg/kg \u00d7 '+fnum(w,1)+' kg)'+(r.rml!=null?' \u2192 '+fnum(r.ml)+' mL, measure <b>'+fnum(r.rml)+' mL</b> (\u2248 '+fnum(r.rmg,0)+' mg)':'')+'</div>'}).join('')+
+(conc?'':'<div class="mt">Enter the product concentration (mg per 5 mL) to get mL.</div>')+
+'<div style="font-weight:600;margin-top:4px">'+esc(reg.intervalText||(dpd+' dose(s) per day'))+(days>0?', for '+days+' days':'')+'</div>'+
+(reg.note?'<div class="mt">'+esc(reg.note)+'</div>':'')+'<div class="mt">Reference: '+esc(rule.source)+'</div>';
+wr.innerHTML=warnsFor(rule,reg,w,AGEM(),mgkg,res).map(function(x){return '<div style="color:var(--warning);font-size:13px;margin-top:3px">\u26a0 '+esc(x)+'</div>'}).join('')}
+function applyCalc(row){
+var s=row._res;if(!s)return;var box=row.querySelector('.calc'),days=parseInt(box.querySelector('.cdays').value);
+var txt=s.res.map(function(r){var v=r.rml!=null?fnum(r.rml)+' ml (\u2248 '+fnum(r.rmg,0)+' mg)':Math.round(r.mg)+' mg';return(s.res.length>1&&r.label)?r.label+': '+v:v}).join('; ');
+row.querySelector('.md').value=txt;
+if(days>0)row.querySelector('.mu').value=days+' \u062f\u0646';
+var ti=s.reg.prn?5:(s.dpd>=1&&s.dpd<=4?s.dpd-1:-1);if(ti>-1)row.querySelector('.mtim').value=TIM[ti];
+var note=box.querySelector('.capp');note.textContent='Added \u2713 review the Dose, Duration and Timing fields above'}
+/* ===== Drug Library, WhatsApp share (added) ===== */
+function gid(i){return document.getElementById(i)}
+function cap(s){s=s||'';return s.charAt(0).toUpperCase()+s.slice(1)}
+function pn(s){var x=parseFloat(s);return x>0?x:null}
+function mkReg(ind,mn,mx,d,md,mdy,dy,iv,nt,ma,ver){
+var r={label:ind+': '+(mn==mx?mn:mn+'-'+mx)+' mg/kg/day in '+d+' dose'+(d>1?'s':''),ind:ind,dosesPerDay:d,prn:false,intervalText:iv||'',note:nt||'',ver:ver||'unverified',
+phases:[{label:'',mgPerKg:+(((mn+mx)/2)/d).toFixed(4),refMin:+(mn/d).toFixed(4),refMax:+(mx/d).toFixed(4),days:0}]};
+if(md)r.phases[0].maxDoseMg=md;if(mdy)r.maxDailyMg=mdy;if(dy)r.days=dy;if(ma)r.minAgeMonths=ma;return r}
+function mkRule(g,o,regs){var r={id:g.toLowerCase().replace(/\W+/g,'-'),generics:[g.toLowerCase()],source:'Entered from your uploaded chart (UNVERIFIED). Ceilings and minimum ages were added from general knowledge; verify against your formulary.',ver:'unverified'};
+for(var k in o)r[k]=o[k];r.regimens=regs.map(function(a){return mkReg.apply(null,a)});return r}
+var NR=[
+mkRule('Ampicillin',{contra:'Penicillin allergy.'},[['Sepsis, meningitis (with others), enteric fever, LRTI (IV/PO)',50,100,4,2000,12000,0,'every 6 hours','Chart range 50-100 mg/kg/day. Meningitis/severe infection may need higher doses per local guideline (not entered).']]),
+mkRule('Cloxacillin',{contra:'Penicillin allergy; cholestatic jaundice with prior use.'},[['Staphylococcal, skin, bone and joint infections',50,100,4,null,null,0,'every 6 hours','']]),
+mkRule('Ceftriaxone',{minAgeMonths:1,minAgeNote:'Avoid in neonates (hyperbilirubinaemia; never with IV calcium). Review separately.',contra:'Cephalosporin / severe penicillin allergy; neonates with hyperbilirubinaemia or given IV calcium; do not mix with calcium-containing fluids.'},[['Sepsis, meningitis, pneumonia, typhoid, UTI (IV/IM)',50,100,1,4000,4000,0,'once daily','Chart: 50-100 mg/kg once daily. Meningitis dosing: check local guideline.']]),
+mkRule('Cefotaxime',{contra:'Cephalosporin / severe penicillin allergy.'},[['Sepsis, meningitis, severe infections (IV)',100,200,4,null,12000,0,'in 3-4 divided doses (IV)','Chart: 3-4 divided doses; 4 used as default.']]),
+mkRule('Ceftazidime',{contra:'Cephalosporin / severe penicillin allergy.'},[['Pseudomonas, severe nosocomial infections (IV)',100,150,3,2000,6000,0,'every 8 hours','']]),
+mkRule('Cefepime',{contra:'Cephalosporin / severe penicillin allergy.'},[['Severe infections, Pseudomonas (IV)',100,150,3,2000,6000,0,'in 2-3 divided doses','Chart: 2-3 divided doses; 3 used as default.']]),
+mkRule('Clarithromycin',{contra:'Macrolide allergy; QT prolongation; interacting drugs (statins, ergots etc.).'},[['Respiratory infection; H. pylori (with others)',7.5,15,2,500,1000,0,'every 12 hours','']]),
+mkRule('Erythromycin',{contra:'Macrolide allergy; QT prolongation; interacting drugs.'},[['URTI, pertussis, alternative in penicillin allergy',30,50,4,null,4000,0,'every 6 hours','']]),
+mkRule('Clindamycin',{contra:'Lincosamide allergy; history of colitis / C. difficile diarrhoea.'},[['Skin and soft tissue, anaerobic, bone/joint infections',10,20,3,null,null,0,'every 8 hours','']]),
+mkRule('Metronidazole',{contra:'Nitroimidazole allergy; caution in liver impairment / neurological disease.'},[['Anaerobic infections, amoebiasis/diarrhoea, intra-abdominal infection',22.5,22.5,3,500,1500,0,'every 8 hours','Chart: 7.5 mg/kg per dose, 3 doses.']]),
+mkRule('Gentamicin',{contra:'Renal impairment, hearing problems; avoid other nephrotoxic drugs.'},[['Serious gram-negative infections, sepsis (IV/IM)',5,7.5,1,null,null,0,'once daily','Monitor drug level and renal function.']]),
+mkRule('Amikacin',{contra:'Renal impairment, hearing problems; avoid other nephrotoxic drugs.'},[['Severe gram-negative infections, MDR organisms (IV/IM)',15,15,1,null,1500,0,'once daily','Monitor level, renal function, hearing.']]),
+mkRule('Piperacillin + Tazobactam',{doseComponent:'piperacillin',contra:'Penicillin / beta-lactam allergy.'},[['Severe infections, intra-abdominal, Pseudomonas, sepsis (IV)',300,300,4,4000,16000,0,'in 4-6 divided doses','Dose is on the piperacillin component; chart 4-6 doses, 4 used as default.']]),
+mkRule('Meropenem',{contra:'Carbapenem / severe beta-lactam allergy; lowers valproate levels.'},[['Severe infections, meningitis, MDR organisms (IV)',60,120,3,2000,6000,0,'every 8 hours','']]),
+mkRule('Imipenem + Cilastatin',{doseComponent:'imipenem',contra:'Carbapenem allergy; seizure disorder / CNS infection (seizure risk); adjust for renal function.'},[['Severe infections, resistant organisms (IV)',60,100,4,1000,4000,0,'in 3-4 divided doses (IV)','Dose on imipenem component; 4 doses used as default.']]),
+mkRule('Vancomycin',{contra:'Renal impairment, hearing problems; infuse slowly (red man syndrome).'},[['MRSA, serious gram-positive infections (IV)',40,60,4,null,null,0,'every 6-8 hours (adjust for renal function)','Monitor level (trough/AUC) and renal function.']]),
+mkRule('Linezolid',{contra:'Serotonergic drugs / MAOIs; monitor blood counts on prolonged use.'},[['MRSA, VRE, resistant gram-positive infections',30,30,3,600,null,0,'every 8 hours','Chart: 10 mg/kg per dose, 2-3 doses; 3 used as default.']]),
+mkRule('Doxycycline',{minAgeMonths:96,minAgeNote:'Chart: use only above 8 years of age.',contra:'Children under 8 years (tooth staining, bone effects); pregnancy; tetracycline allergy.'},[['Rickettsial infections, atypical pneumonia, acne (over 8 y)',2,4,2,null,200,0,'every 12 hours (or once daily)','Chart left the max mg/day blank; 200 mg/day is the usual ceiling (verify).']]),
+mkRule('Co-trimoxazole',{},[['UTI (chart also lists PCP; PCP doses are usually higher, verify). Trimethoprim component',8,12,2,160,null,0,'every 12 hours','Dose on the trimethoprim component.']]),
+mkRule('Nitrofurantoin',{minAgeMonths:1,minAgeNote:'Chart: over 1 month of age.',contra:'Under 1 month; G6PD deficiency; renal impairment; pyelonephritis (lower UTI only).'},[['Lower UTI only (not pyelonephritis)',5,7,4,null,400,0,'every 6 hours','Chart did not state doses/day; 4 assumed.']])
+];
+var V='Vial (set concentration)';
+var NM=[['Ampicillin','Ampicillin','125 mg/5 mL'],['Ampicillin','Ampicillin','250 mg/5 mL'],['Ampicillin','Ampicillin',V],['Cloxacillin','Cloxacillin','125 mg/5 mL'],['Cloxacillin','Cloxacillin',V],
+['Rocephin','Ceftriaxone',V],['Ceftriaxone','Ceftriaxone',V],['Claforan','Cefotaxime',V],['Cefotaxime','Cefotaxime',V],['Fortum','Ceftazidime',V],['Ceftazidime','Ceftazidime',V],['Maxipime','Cefepime',V],['Cefepime','Cefepime',V],
+['Gentamicin','Gentamicin','80 mg/2 mL'],['Amikacin','Amikacin','500 mg/2 mL'],['Tazocin','Piperacillin + Tazobactam',V],['Meronem','Meropenem',V],['Meropenem','Meropenem',V],['Tienam','Imipenem + Cilastatin',V],['Vancocin','Vancomycin',V],['Vancomycin','Vancomycin',V],['Zyvox','Linezolid','100 mg/5 mL'],['Linezolid','Linezolid','100 mg/5 mL']];
+(function(){NR.forEach(function(n){var ex=rulefor(n.generics[0]);if(ex){n.regimens.forEach(function(r){ex.regimens.push(r)})}else RULES.push(n)});
+NM.forEach(function(x){if(!MED.some(function(m){return m.b==x[0]&&m.g==x[1]&&m.s==x[2]}))MED.push({b:x[0],g:x[1],s:x[2],c:'Antibiotics'})})})();
+var DEF={r:JSON.stringify(RULES),m:JSON.stringify(MED)};
+try{var sv=JSON.parse(localStorage.getItem('rxlib1')||'null');if(sv&&sv.r&&sv.m){RULES=sv.r;MED=sv.m}}catch(e){}
+function saveLib(){try{localStorage.setItem('rxlib1',JSON.stringify({r:RULES,m:MED}));return true}catch(e){return false}}
+function refreshRows(){[].forEach.call(document.querySelectorAll('.med'),function(row){row._key=null;renderCalc(row)})}
+function findMed(text){var t=(text||'').trim().toLowerCase();if(t.length<2)return null;var c=[],L=0;
+MED.forEach(function(m){var b=m.b.toLowerCase();if(t.indexOf(b)==0){if(b.length>L){L=b.length;c=[]}if(b.length==L)c.push(m)}});
+if(!c.length){L=0;MED.forEach(function(m){var g=m.g.toLowerCase();if(t.indexOf(g)==0){if(g.length>L){L=g.length;c=[]}if(g.length==L)c.push(m)}})}
+if(!c.length)return null;return c.filter(function(m){return m.s&&t.indexOf(m.s.toLowerCase())>-1})[0]||c[0]}
+function warnsFor(rule,reg,w,ageM,mgkg,res){var o=warnsFor0(rule,reg,w,ageM,mgkg,res);if(!(parseFloat(document.getElementById('age').value)>=0))o.push('Age not entered: age restrictions were not checked.');var v=reg.ver||rule.ver||'cited';
+if(v=='unverified')o.unshift('UNVERIFIED dose: entered from your chart or an import and not checked against a formulary. Verify before prescribing (then mark it Verified in the Drug Library).');
+if(reg.maxDailyMg==null&&reg.maxDailyMgPerKg==null&&!reg.phases.some(function(p){return p.maxDoseMg!=null}))o.push('No maximum dose is recorded for this regimen: check the ceiling yourself.');
+var mina=reg.minAgeMonths!=null?reg.minAgeMonths:rule.minAgeMonths;
+if(mina==null&&ageM<12)o.push('No minimum age is recorded: neonatal/infant dosing often differs, verify.');
+if(rule.contra)o.push('Contraindications / cautions: '+rule.contra);return o}
+/* --- Library editor --- */
+var libCur=null;
+function fld(l,c,v,t){return '<div><label>'+l+'</label><input class="'+c+'" type="'+(t||'number')+'" step="any" value="'+esc(v==null?'':String(v))+'"></div>'}
+function nz(x){return x==null?'':+(+x).toFixed(3)}
+function rgRow(g,i){var p=g.phases[0],d=g.dosesPerDay||1;
+if(g.phases.length>1)return '<div class="rg cbox" data-i="'+i+'" data-multi="1"><b>'+esc(g.label)+'</b><div class="mt">Multi-phase regimen: edit it in Advanced JSON below.</div><button class="chip" type="button" onclick="rgDel('+i+')">Remove</button></div>';
+return '<div class="rg cbox" data-i="'+i+'"><div class="g" style="grid-template-columns:1fr">'+fld('Indication','ri',g.ind||g.label,'text')+'</div><div class="g">'+fld('Doses per day','rd',d)+fld('Duration (days)','rdy',nz(g.days))+fld('mg/kg/day min','rmn',nz((p.refMin!=null?p.refMin:p.mgPerKg)*d))+fld('mg/kg/day max','rmx',nz((p.refMax!=null?p.refMax:p.mgPerKg)*d))+fld('Max single dose (mg)','rms',nz(p.maxDoseMg))+fld('Max per day (mg)','rmd',nz(g.maxDailyMg))+fld('Min age (months)','rma',nz(g.minAgeMonths))+fld('Interval','riv',g.intervalText,'text')+'</div><div class="g" style="grid-template-columns:1fr">'+fld('Note','rnt',g.note,'text')+'</div><button class="chip" type="button" style="margin-top:6px" onclick="rgDel('+i+')">Remove regimen</button></div>'}
+function libShow(i){var r,isNew=(i==='new');
+if(isNew)r={id:'',generics:[''],ver:'unverified',source:'Entered by user',regimens:[]};else{r=JSON.parse(JSON.stringify(RULES[i]));}
+var g0=r.generics[0],gd=(MED.filter(function(m){return m.g.toLowerCase()==g0})[0]||{}).g||cap(g0);
+libCur={i:isNew?-1:i,r:r,oldG:g0,gd:gd,brands:MED.filter(function(m){return m.g.toLowerCase()==g0&&g0}).map(function(m){return{b:m.b,s:m.s,c:m.c}})};libDraw()}
+function libDraw(){var c=libCur,r=c.r,box=gid('libui');
+var opts=RULES.map(function(x,k){return[x.generics[0],k,x.ver]}).sort(function(a,b){return a[0]<b[0]?-1:1}).map(function(x){return '<option value="'+x[1]+'"'+(x[1]===c.i?' selected':'')+'>'+esc(cap(x[0]))+(x[2]=='unverified'?' (unverified)':'')+'</option>'}).join('');
+box.innerHTML='<div class="mt" style="margin-bottom:6px">Every drug, strength and dose below is editable. Changes are saved in this browser; use Export backup to keep a copy or move it to another device.</div>'+
+'<select id="lsel" style="margin-bottom:8px">'+(c.i<0?'<option>New drug (unsaved)</option>':'')+opts+'</select><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="chip" type="button" onclick="libShow(\'new\')">+ New drug</button><button class="chip" type="button" onclick="libExport()">Export backup</button><button class="chip" type="button" onclick="libReset()">Reset to defaults</button></div>'+
+'<div class="cbox" id="ledit"><div class="g">'+fld('Generic name','lname',cap(r.generics[0]),'text')+'<div><label>Status</label><select id="lver"><option value="unverified"'+(r.ver=='unverified'?' selected':'')+'>Unverified</option><option value="cited"'+((r.ver||'cited')=='cited'?' selected':'')+'>Source cited</option><option value="verified"'+(r.ver=='verified'?' selected':'')+'>Verified by me</option></select></div>'+fld('Min age (months)','lmina',nz(r.minAgeMonths))+fld('Adult weight from (kg)','ladult',nz(r.adultWeightKg))+'</div>'+
+'<label class="mt">Min-age note</label><input type="text" id="lmnote" value="'+esc(r.minAgeNote||'')+'">'+
+'<label class="mt">Contraindications / cautions</label><textarea id="lcontra" rows="2">'+esc(r.contra||'')+'</textarea>'+
+'<label class="mt">Source / reference</label><textarea id="lsrc" rows="2">'+esc(r.source||'')+'</textarea>'+
+'<div style="font-weight:600;margin:8px 0 4px">Regimens (indication-specific doses)</div>'+r.regimens.map(rgRow).join('')+'<button class="chip" type="button" onclick="rgAdd()">+ Add regimen</button>'+
+'<div style="font-weight:600;margin:12px 0 4px">Medicines / brands and strengths</div>'+c.brands.map(function(b,k){return '<div class="g br" style="margin-bottom:6px;align-items:end">'+fld('Brand','bn',b.b,'text')+fld('Strength / formulation (e.g. 125 mg/5 mL)','bs',b.s,'text')+'<button class="chip" type="button" onclick="brDel('+k+')">Remove</button></div>'}).join('')+'<button class="chip" type="button" onclick="brAdd()">+ Add brand / strength</button>'+
+'<div style="display:flex;gap:6px;margin-top:12px"><button class="main-btn" style="margin:0" type="button" onclick="libSave()">Save drug</button><button class="chip" type="button" onclick="libDel()">Delete drug</button></div><div id="lmsg" class="mt" style="margin-top:6px"></div>'+
+'<details style="margin-top:8px"><summary class="mt" style="cursor:pointer">Advanced JSON for this drug</summary><textarea id="ljson" rows="8" style="font-family:monospace;font-size:12px">'+esc(JSON.stringify(r,null,1))+'</textarea><button class="chip" type="button" onclick="libJson()">Apply JSON</button></details></div>'+
+'<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Import medicines (CSV / JSON)</summary><div class="mt" style="margin:6px 0">CSV with a header row. Columns: generic, brand, strength, indication, mgkg_day_min, mgkg_day_max, doses_per_day, max_dose_mg, max_daily_mg, min_age_months, days, interval, notes, contraindications. Only generic is required. Imported doses are marked Unverified until you verify them.</div><input type="file" id="lfile" accept=".csv,.txt,.json" style="margin-bottom:6px"><textarea id="limp" rows="5" placeholder="Paste CSV or JSON here"></textarea><button class="chip" type="button" onclick="libImportGo()">Import</button><div id="limsg" class="mt" style="margin-top:6px"></div></details>';
+gid('lsel').onchange=function(){if(this.value!=='')libShow(+this.value)};
+gid('lfile').onchange=function(){var f=this.files[0];if(!f)return;var fr=new FileReader();fr.onload=function(){gid('limp').value=fr.result};fr.readAsText(f)}}
+function qv(k){return document.querySelector('#ledit .'+k).value.trim()}
+function libCollect(){var c=libCur,r=c.r,v=function(i){return gid(i).value.trim()};
+r.generics=[qv('lname').toLowerCase()];r.ver=v('lver') ;r.minAgeMonths=pn(qv('lmina'));r.adultWeightKg=pn(qv('ladult'));r.minAgeNote=v('lmnote');r.contra=v('lcontra');r.source=v('lsrc');
+var old=r.regimens,out=[];
+[].forEach.call(document.querySelectorAll('#ledit .rg'),function(el){var o=old[+el.getAttribute('data-i')];if(el.getAttribute('data-multi')){o.ver=r.ver;out.push(o);return}
+var q=function(k){return pn(el.querySelector('.'+k).value)},ind=el.querySelector('.ri').value.trim()||'Regimen',d=q('rd')||1,mn=q('rmn')||0,mx=q('rmx')||mn;
+var op=o.phases[0],od=o.dosesPerDay||1,same=(o.ind||o.label)==ind&&Math.abs((op.refMin!=null?op.refMin:op.mgPerKg)*od-mn)<.001&&Math.abs((op.refMax!=null?op.refMax:op.mgPerKg)*od-mx)<.001&&od==d;
+var n=mkReg(ind,mn,mx,d,q('rms'),q('rmd'),q('rdy'),el.querySelector('.riv').value.trim(),el.querySelector('.rnt').value.trim(),q('rma'),r.ver);
+if(same){n.label=o.label;n.phases[0].mgPerKg=op.mgPerKg}else if(op.mgPerKg&&op.mgPerKg*d>=mn&&op.mgPerKg*d<=mx)n.phases[0].mgPerKg=op.mgPerKg;
+n.prn=!!o.prn;if(o.forConc)n.forConc=o.forConc;out.push(n)});
+r.regimens=out;
+c.brands=[].map.call(document.querySelectorAll('#ledit .br'),function(el,k){return{b:el.querySelector('.bn').value.trim(),s:el.querySelector('.bs').value.trim(),c:(c.brands[k]||{}).c}})}
+function rgAdd(){libCollect();libCur.r.regimens.push(mkReg('',1,1,1,null,null,0,'','',null,libCur.r.ver));libDraw()}
+function rgDel(i){libCollect();libCur.r.regimens.splice(i,1);libDraw()}
+function brAdd(){libCollect();libCur.brands.push({b:'',s:'',c:'Other'});libDraw()}
+function brDel(i){libCollect();libCur.brands.splice(i,1);libDraw()}
+function libSave(){libCollect();var c=libCur,r=c.r,m=gid('lmsg');
+if(!r.generics[0]){m.textContent='Enter the generic name.';return}
+var dup=RULES.some(function(x,k){return k!==c.i&&x.generics[0]==r.generics[0]});if(dup){m.textContent='A drug with this generic name already exists.';return}
+r.id=r.generics[0].replace(/\W+/g,'-');if(c.i<0){RULES.push(r);c.i=RULES.length-1}else RULES[c.i]=r;
+var gd=(r.generics[0]==c.oldG&&c.gd)?c.gd:cap(r.generics[0]);
+MED=MED.filter(function(x){return x.g.toLowerCase()!==c.oldG||!c.oldG});
+c.brands.forEach(function(b){if(b.b)MED.push({b:b.b,g:gd,s:b.s||'Varies',c:b.c||'Other'})});
+c.oldG=r.generics[0];c.gd=gd;var ok=saveLib();refreshRows();libDraw();gid('lmsg').textContent=ok?'Saved.':'Saved for this session only: browser storage is unavailable here. Use Export backup.'}
+function libDel(){var c=libCur;if(c.i<0||!confirm('Delete the dose rule for '+cap(c.r.generics[0])+'? Brands stay in the medicine list.'))return;RULES.splice(c.i,1);saveLib();refreshRows();libShow(0)}
+function libJson(){var m;try{var j=JSON.parse(gid('ljson').value);if(!j.generics||!j.generics.length||!Array.isArray(j.regimens))throw 0;libCur.r=j;libDraw();gid('lmsg').textContent='JSON applied. Press Save drug to keep it.'}catch(e){gid('lmsg').textContent='Invalid JSON: needs generics[] and regimens[].'}}
+function libExport(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({r:RULES,m:MED},null,1)],{type:'application/json'}));a.download='drug-library-backup.json';document.body.appendChild(a);a.click();a.remove()}
+function libReset(){if(!confirm('Reset the whole library to the built-in defaults? Your own edits will be lost.'))return;RULES=JSON.parse(DEF.r);MED=JSON.parse(DEF.m);try{localStorage.removeItem('rxlib1')}catch(e){}refreshRows();libShow(0)}
+function parseCSV(t){var dl=(t.split('\n')[0].indexOf('\t')>-1)?'\t':',',rows=[],row=[],f='',q=false;
+for(var i=0;i<t.length;i++){var ch=t[i];if(q){if(ch=='"'){if(t[i+1]=='"'){f+='"';i++}else q=false}else f+=ch}else if(ch=='"')q=true;else if(ch==dl){row.push(f);f=''}else if(ch=='\n'||ch=='\r'){if(ch=='\r'&&t[i+1]=='\n')i++;row.push(f);f='';rows.push(row);row=[]}else f+=ch}
+row.push(f);rows.push(row);return rows.filter(function(r){return r.some(function(x){return x.trim()})})}
+function libImportGo(){var t=gid('limp').value.trim(),m=gid('limsg');if(!t){m.textContent='Nothing to import.';return}
+try{if(t[0]=='{'){var j=JSON.parse(t);if(!j.r||!j.m)throw 'Not a library backup.';if(!confirm('Replace the whole library with this backup?'))return;RULES=j.r;MED=j.m;m.textContent='Backup restored.'}
+else{var rows=parseCSV(t),h=rows.shift().map(function(x){return x.toLowerCase().replace(/[^a-z0-9]/g,'')}),nr=0,nb=0;
+rows.forEach(function(c){var o={};h.forEach(function(k,i){o[k]=(c[i]||'').trim()});var g=o.generic;if(!g)return;
+var rule=rulefor(g);if(!rule){rule={id:g.toLowerCase().replace(/\W+/g,'-'),generics:[g.toLowerCase()],ver:'unverified',source:'Imported (UNVERIFIED)',regimens:[]};RULES.push(rule)}
+if(o.contraindications&&!rule.contra)rule.contra=o.contraindications;
+if(o.brand&&!MED.some(function(x){return x.b==o.brand&&x.g.toLowerCase()==g.toLowerCase()&&x.s==(o.strength||'Varies')})){MED.push({b:o.brand,g:cap(g),s:o.strength||'Varies',c:o.category||'Other'});nb++}
+var mn=pn(o.mgkgdaymin),mx=pn(o.mgkgdaymax)||mn;if(mn){rule.regimens.push(mkReg(o.indication||'Imported',mn,mx,pn(o.dosesperday)||1,pn(o.maxdosemg),pn(o.maxdailymg),pn(o.days),o.interval,o.notes,pn(o.minagemonths)));nr++}});
+m.textContent='Imported '+nr+' regimen(s) and '+nb+' brand/strength entr'+(nb==1?'y':'ies')+'. They are marked Unverified.'}
+var mt=m.textContent;saveLib();refreshRows();libShow(0);var nm=gid('limsg');nm.textContent=mt;nm.closest('details').open=true}catch(e){m.textContent='Import failed: '+(e&&e.message?e.message:e)}}
+/* --- WhatsApp --- */
+function waNum(s){var d=(s||'').replace(/\D/g,'');if(d.indexOf('00')==0)d=d.slice(2);else if(d[0]=='0')d='92'+d.slice(1);return d.length>=10&&d.length<=15?d:''}
+function openWA(){var r=window._rx;if(!r)return;
+var L=['*Dr. M. Ibrahim Ishaq*','MBBS, RMP, Dip. Paeds. RCP (Ireland)','G.M Family Clinic, Faisalabad | 0306-7602000','','*Patient:* '+(r.pn||'-')+(r.rn?' (MRN '+r.rn+')':''),[r.ay!==null?'*Age:* '+r.ay+' y '+r.am+' m':'',r.sxt?'*Sex:* '+r.sxt:'',WT()?'*Weight:* '+WT()+' kg':''].filter(Boolean).join(' | '),'*Date:* '+new Date().toLocaleDateString('en-GB')];
+if(r.dx)L.push('*Diagnosis:* '+r.dx);
+if(r.gl.length){L.push('','*Growth*');r.gl.forEach(function(x){L.push(x)})}
+L.push('','*Rx*');
+r.meds.forEach(function(m,i){L.push((i+1)+'. *'+((m.p?m.p+' ':'')+m.n)+'*');var a=[];if(m.d)a.push('Dose: '+m.d);if(m.t)a.push(m.t);if(m.u)a.push('Duration: '+m.u);if(a.length)L.push('    '+a.join(' | '));if(m.o.length)L.push('    '+m.o.join('، '))});
+if(r.adv)L.push('','*Advice:* '+r.adv);
+L.push('','_G.M Family Clinic, PHC Reg. No. R-54080. Not valid for court of law._');
+gid('wa').innerHTML='<div class="cbox" style="margin-top:8px"><label class="mt">Patient WhatsApp number (a leading 0 is read as Pakistan +92; otherwise include the country code)</label><input type="tel" id="waph" value="'+esc(gid('pphone').value)+'"><label class="mt" style="display:block;margin-top:8px">Message: review and edit before sending</label><textarea id="watx" rows="16">'+esc(L.join('\n'))+'</textarea><div id="waerr" role="alert" style="font-size:13px;color:var(--danger)"></div><button class="main-btn" type="button" onclick="sendWA()">Open WhatsApp with this message</button><button class="chip" type="button" style="margin-top:6px" onclick="navigator.clipboard&&navigator.clipboard.writeText(gid(\'watx\').value)">Copy text</button><div class="mt" style="margin-top:6px">WhatsApp opens with the message ready; you press Send there.</div></div>';
+gid('watx').scrollIntoView({behavior:'smooth'})}
+function sendWA(){var n=waNum(gid('waph').value);if(!n){gid('waerr').textContent='Enter a valid WhatsApp number.';return}gid('waerr').textContent='';window.open('https://wa.me/'+n+'?text='+encodeURIComponent(gid('watx').value),'_blank')}
+libShow(0);
+
+addMed();
+</script>
+</body>
+</html>
